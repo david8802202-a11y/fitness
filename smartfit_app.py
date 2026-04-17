@@ -12,31 +12,48 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 自定义 CSS
+# 改進的 CSS - 更鮮豔的顏色
 st.markdown("""
 <style>
     .main {
         padding: 0rem 0rem;
     }
+    .exercise-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 15px;
+        border-radius: 12px;
+        margin: 10px 0;
+        border-left: 4px solid #ff6b6b;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .exercise-card-gym {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 15px;
+        border-radius: 12px;
+        margin: 10px 0;
+        border-left: 4px solid #ff9999;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .success-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 15px;
+        border-radius: 12px;
+        margin: 10px 0;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
     .metric-card {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
         padding: 20px;
         border-radius: 10px;
         margin: 10px 0;
+        color: white;
     }
-    .exercise-card {
-        background-color: #e8f4f8;
-        padding: 15px;
-        border-radius: 8px;
-        margin: 10px 0;
-        border-left: 4px solid #1f77b4;
-    }
-    .success-card {
-        background-color: #d4edda;
-        padding: 15px;
-        border-radius: 8px;
-        margin: 10px 0;
-        border-left: 4px solid #28a745;
+    .icon-large {
+        font-size: 40px;
+        margin-right: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -53,9 +70,12 @@ EXERCISES = [
         "sets": 3,
         "reps": 12,
         "restSeconds": 60,
+        "mode": "徒手",
+        "icon": "🏋️",
         "description": "經典的徒手胸部訓練動作",
         "tips": ["保持身體成一直線", "降低身體直到胸部接近地面", "推回起始位置"],
-        "mistakes": ["臀部下沉", "肘部張得太開", "活動範圍不足"]
+        "mistakes": ["臀部下沉", "肘部張得太開", "活動範圍不足"],
+        "youtubeKeyword": "push ups perfect form"
     },
     {
         "id": "002",
@@ -66,9 +86,12 @@ EXERCISES = [
         "sets": 3,
         "reps": 15,
         "restSeconds": 90,
+        "mode": "徒手",
+        "icon": "🦵",
         "description": "下身訓練的基礎動作",
         "tips": ["挺胸保持核心緊縮", "臀部向後向下移動", "通過腳跟推起"],
-        "mistakes": ["膝蓋內扣", "身體向前傾斜過多", "深度不夠"]
+        "mistakes": ["膝蓋內扣", "身體向前傾斜過多", "深度不夠"],
+        "youtubeKeyword": "bodyweight squats form"
     },
     {
         "id": "003",
@@ -79,9 +102,12 @@ EXERCISES = [
         "sets": 3,
         "reps": 8,
         "restSeconds": 120,
+        "mode": "徒手",
+        "icon": "💪",
         "description": "上身拉力訓練",
         "tips": ["握距略寬於肩膀", "下巴超過橫杆", "控制下降"],
-        "mistakes": ["活動範圍不足", "使用衝力", "肘部張得太開"]
+        "mistakes": ["活動範圍不足", "使用衝力", "肘部張得太開"],
+        "youtubeKeyword": "pull ups technique tutorial"
     },
     {
         "id": "004",
@@ -92,9 +118,12 @@ EXERCISES = [
         "sets": 3,
         "reps": 30,
         "restSeconds": 60,
+        "mode": "徒手",
+        "icon": "📍",
         "description": "核心穩定性訓練",
         "tips": ["身體成一直線", "全程核心緊縮", "不要臀部下沉"],
-        "mistakes": ["臀部下沉", "頸部過度拉伸", "肩膀過度前傾"]
+        "mistakes": ["臀部下沉", "頸部過度拉伸", "肩膀過度前傾"],
+        "youtubeKeyword": "perfect plank form"
     },
     {
         "id": "005",
@@ -105,74 +134,92 @@ EXERCISES = [
         "sets": 4,
         "reps": 10,
         "restSeconds": 90,
+        "mode": "健身房",
+        "icon": "🏗️",
         "description": "使用啞鈴的胸部訓練",
         "tips": ["身體呈平板狀", "啞鈴降至胸部", "爆發力推起"],
-        "mistakes": ["彈跳重量", "推力不均勻", "肘部貼得太近"]
+        "mistakes": ["彈跳重量", "推力不均勻", "肘部貼得太近"],
+        "youtubeKeyword": "dumbbell bench press form"
     },
     {
         "id": "006",
-        "name": "Dumbbell Rows",
-        "nameCN": "啞鈴划船",
-        "bodyPart": "背部",
+        "name": "Barbell Squat",
+        "nameCN": "槓鈴深蹲",
+        "bodyPart": "腿部",
         "difficulty": "中級",
         "sets": 4,
-        "reps": 10,
-        "restSeconds": 90,
-        "description": "背部划船訓練",
-        "tips": ["單膝跪地或側身", "保持核心穩定", "啞鈴拉至腰部"],
-        "mistakes": ["轉動身體獲得動力", "不完全收縮", "肩膀過度內收"]
+        "reps": 8,
+        "restSeconds": 120,
+        "mode": "健身房",
+        "icon": "⬇️",
+        "description": "加重腿部訓練",
+        "tips": ["槓鈴放在肩膀", "保持直立姿勢", "深蹲至平行"],
+        "mistakes": ["膝蓋超過腳尖", "過度傾斜", "不夠深"],
+        "youtubeKeyword": "barbell back squat form"
     },
     {
         "id": "007",
-        "name": "Shoulder Press",
-        "nameCN": "肩推",
-        "bodyPart": "肩膀",
-        "difficulty": "中級",
-        "sets": 3,
+        "name": "Cable Row",
+        "nameCN": "拉力機划船",
+        "bodyPart": "背部",
+        "difficulty": "初級",
+        "sets": 4,
         "reps": 12,
         "restSeconds": 60,
-        "description": "肩膀推力訓練",
-        "tips": ["啞鈴至肩膀高度", "上推至頭頂", "控制下降"],
-        "mistakes": ["過度拱腰", "肘部位置不當", "活動不完全"]
+        "mode": "健身房",
+        "icon": "🔗",
+        "description": "背部拉力機訓練",
+        "tips": ["坐直保持挺胸", "拉至腹部", "控制回放"],
+        "mistakes": ["過度前傾", "手臂主導", "不完整動作"],
+        "youtubeKeyword": "cable row machine form"
     },
     {
         "id": "008",
-        "name": "Bicep Curls",
-        "nameCN": "二頭肌彎舉",
-        "bodyPart": "手臂",
+        "name": "Leg Press Machine",
+        "nameCN": "腿部推蹬機",
+        "bodyPart": "腿部",
+        "difficulty": "初級",
+        "sets": 3,
+        "reps": 15,
+        "restSeconds": 90,
+        "mode": "健身房",
+        "icon": "🚀",
+        "description": "機械式腿部推蹬",
+        "tips": ["腳放在機器上", "完全伸展", "控制下降"],
+        "mistakes": ["膝蓋鎖定", "下降不足", "重量過重"],
+        "youtubeKeyword": "leg press machine proper form"
+    },
+    {
+        "id": "009",
+        "name": "Chest Press Machine",
+        "nameCN": "胸部推蹬機",
+        "bodyPart": "胸部",
         "difficulty": "初級",
         "sets": 3,
         "reps": 12,
         "restSeconds": 60,
-        "description": "二頭肌孤立訓練",
-        "tips": ["靠在牆上保持穩定", "只有前臂移動", "充分收縮"],
-        "mistakes": ["使用衝力搖晃", "不完全伸展", "肘部移動"]
-    },
-    {
-        "id": "009",
-        "name": "Tricep Dips",
-        "nameCN": "三頭肌撐體",
-        "bodyPart": "手臂",
-        "difficulty": "中級",
-        "sets": 3,
-        "reps": 10,
-        "restSeconds": 90,
-        "description": "三頭肌訓練動作",
-        "tips": ["身體向前稍微傾斜", "肘部彎曲至90度", "通過三頭肌推起"],
-        "mistakes": ["向前傾斜太多", "下降不足", "肘部外張太寬"]
+        "mode": "健身房",
+        "icon": "🎯",
+        "description": "機械式胸部訓練",
+        "tips": ["坐直對齊機器", "完全推出", "控制回放"],
+        "mistakes": ["肘部太低", "過度推出", "不穩定"],
+        "youtubeKeyword": "chest press machine tutorial"
     },
     {
         "id": "010",
-        "name": "Leg Press",
-        "nameCN": "腿部推舉",
-        "bodyPart": "腿部",
-        "difficulty": "中級",
-        "sets": 4,
+        "name": "Lat Pulldown",
+        "nameCN": "下拉機",
+        "bodyPart": "背部",
+        "difficulty": "初級",
+        "sets": 3,
         "reps": 12,
-        "restSeconds": 90,
-        "description": "下身力量訓練",
-        "tips": ["腳放在肩膀寬度", "完全伸展腿部", "控制下降速度"],
-        "mistakes": ["膝蓋超過腳尖", "只做部分動作", "重量過重"]
+        "restSeconds": 60,
+        "mode": "健身房",
+        "icon": "⬇️",
+        "description": "背闊肌下拉訓練",
+        "tips": ["拉至胸部", "控制回放", "全程核心緊縮"],
+        "mistakes": ["身體搖晃", "手臂主導", "不完整範圍"],
+        "youtubeKeyword": "lat pulldown proper technique"
     }
 ]
 
@@ -203,19 +250,22 @@ if "workout_progress" not in st.session_state:
 # ==================== 功能函数 ====================
 
 def get_recommended_exercises(body_parts, duration, mode):
-    """获取推荐动作"""
+    """获取推荐动作 - 按模式区分"""
     filtered = EXERCISES
+    
+    # 按模式篩選
+    filtered = [e for e in filtered if e["mode"] == mode]
     
     # 按身体部位筛选
     filtered = [e for e in filtered if e["bodyPart"] in body_parts]
     
-    # 按模式筛选（暂时全部支持）
-    
-    # 按时长和难度调整
-    experience_map = {"初級": "初級", "中級": "中級", "高級": "高級"}
-    
     # 返回推荐的动作（限制数量）
     return filtered[:4] if len(filtered) > 4 else filtered
+
+def get_youtube_link(keyword):
+    """生成 YouTube 搜尋鏈接"""
+    search_url = f"https://www.youtube.com/results?search_query={keyword.replace(' ', '+')}"
+    return search_url
 
 def format_duration(seconds):
     """格式化时间"""
@@ -229,7 +279,7 @@ def save_workout_record(exercises, duration):
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "exercises": exercises,
         "duration": duration,
-        "calories": duration * 7  # 粗略估算
+        "calories": duration * 7
     }
     st.session_state.workout_records.append(record)
 
@@ -271,31 +321,55 @@ def page_home():
         # 获取推荐动作
         recommended = get_recommended_exercises(selected_parts, duration, st.session_state.user_data["mode"])
         
-        st.subheader(f"🏆 推薦訓練動作 ({len(recommended)} 個)")
-        
-        for exercise in recommended:
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write(f"**{exercise['nameCN']}** ({exercise['name']})")
-                    st.caption(f"難度: {exercise['difficulty']} | 部位: {exercise['bodyPart']}")
-                    st.caption(f"{exercise['sets']} 組 × {exercise['reps']} 次 | 休息: {exercise['restSeconds']} 秒")
-                with col2:
-                    if st.button("查看", key=f"view_{exercise['id']}"):
-                        st.session_state.current_page = "動作詳情"
-                        st.session_state.selected_exercise = exercise
-        
-        st.write("---")
-        
-        if st.button("🎬 開始訓練", key="start_workout", use_container_width=True):
-            st.session_state.current_workout = {
-                "exercises": [e["nameCN"] for e in recommended],
-                "duration": duration,
-                "body_parts": selected_parts,
-                "start_time": datetime.now()
-            }
-            st.session_state.current_page = "訓練執行"
-            st.rerun()
+        if not recommended:
+            st.warning(f"⚠️ 沒有找到適合 {st.session_state.user_data['mode']} 訓練的 {', '.join(selected_parts)} 動作")
+            st.info("💡 提示：健身房模式會推薦需要器材的動作，徒手模式推薦無需器材的動作")
+        else:
+            st.subheader(f"🏆 推薦訓練動作 ({len(recommended)} 個)")
+            
+            for exercise in recommended:
+                # 根據模式選擇背景顏色
+                card_class = "exercise-card-gym" if exercise["mode"] == "健身房" else "exercise-card"
+                
+                with st.container():
+                    col1, col2, col3 = st.columns([1, 3, 1])
+                    
+                    with col1:
+                        st.markdown(f"<div style='font-size: 40px; margin-top: 10px;'>{exercise['icon']}</div>", 
+                                   unsafe_allow_html=True)
+                    
+                    with col2:
+                        st.markdown(f"""
+                        <div class='{card_class}'>
+                            <strong>{exercise['nameCN']}</strong> ({exercise['name']})<br>
+                            難度: {exercise['difficulty']} | 部位: {exercise['bodyPart']}<br>
+                            {exercise['sets']} 組 × {exercise['reps']} 次 | 休息: {exercise['restSeconds']} 秒
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col3:
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            if st.button("📺 YT", key=f"yt_{exercise['id']}", help="在 YouTube 上查看"):
+                                st.markdown(f"[📺 點擊查看 YouTube 教學]({get_youtube_link(exercise['youtubeKeyword'])})", 
+                                           unsafe_allow_html=True)
+                        with col_b:
+                            if st.button("📋", key=f"view_{exercise['id']}", help="查看詳細"):
+                                st.session_state.current_page = "動作詳情"
+                                st.session_state.selected_exercise = exercise
+                                st.rerun()
+            
+            st.write("---")
+            
+            if st.button("🎬 開始訓練", key="start_workout", use_container_width=True):
+                st.session_state.current_workout = {
+                    "exercises": [e["nameCN"] for e in recommended],
+                    "duration": duration,
+                    "body_parts": selected_parts,
+                    "start_time": datetime.now()
+                }
+                st.session_state.current_page = "訓練執行"
+                st.rerun()
     else:
         st.info("👈 請先選擇要訓練的部位")
 
@@ -330,7 +404,9 @@ def page_exercise_list():
         return
     
     for exercise in filtered_exercises:
-        with st.expander(f"**{exercise['nameCN']}** - {exercise['difficulty']}", expanded=False):
+        card_class = "exercise-card-gym" if exercise["mode"] == "健身房" else "exercise-card"
+        
+        with st.expander(f"{exercise['icon']} **{exercise['nameCN']}** - {exercise['difficulty']} ({exercise['mode']})", expanded=False):
             col1, col2 = st.columns(2)
             
             with col1:
@@ -352,6 +428,12 @@ def page_exercise_list():
             st.write("**常見錯誤**:")
             for mistake in exercise["mistakes"]:
                 st.write(f"❌ {mistake}")
+            
+            st.write("---")
+            
+            if st.button(f"📺 在 YouTube 查看《{exercise['nameCN']}》教學", key=f"yt_detail_{exercise['id']}"):
+                st.markdown(f"[📺 點擊前往 YouTube]({get_youtube_link(exercise['youtubeKeyword'])})", 
+                           unsafe_allow_html=True)
 
 # ==================== 页面 3: 训练执行 ====================
 
@@ -382,14 +464,17 @@ def page_workout_execution():
         current_exercise = next((e for e in EXERCISES if e["nameCN"] == exercise_name), None)
         
         if current_exercise:
-            col1, col2 = st.columns([2, 1])
+            col1, col2, col3 = st.columns([1, 2, 1])
             
             with col1:
-                st.subheader(f"當前動作: {current_exercise['nameCN']}")
-                st.write(f"部位: {current_exercise['bodyPart']}")
-                st.write(f"難度: {current_exercise['difficulty']}")
+                st.markdown(f"<div style='font-size: 80px; text-align: center;'>{current_exercise['icon']}</div>", 
+                           unsafe_allow_html=True)
             
             with col2:
+                st.subheader(f"當前動作: {current_exercise['nameCN']}")
+                st.write(f"部位: {current_exercise['bodyPart']} | 難度: {current_exercise['difficulty']}")
+            
+            with col3:
                 st.metric("組", st.session_state.workout_progress.get("sets", 1))
                 st.metric("次", st.session_state.workout_progress.get("reps", 1))
             
@@ -538,7 +623,7 @@ def page_settings():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("應用版本", "1.0.0")
+        st.metric("應用版本", "2.0.0")
     
     with col2:
         st.metric("動作庫", f"{len(EXERCISES)} 個動作")
@@ -548,6 +633,8 @@ def page_settings():
     
     st.write("---")
     
+    st.info("✨ 新功能：添加 YouTube 連結、彩色 Icon、健身房模式區分")
+    
     if st.button("💾 保存設置", use_container_width=True):
         st.success("✅ 設置已保存")
 
@@ -556,7 +643,8 @@ def page_settings():
 def main():
     # 侧边栏导航
     with st.sidebar:
-        st.title("SmartFit")
+        st.title("💪 SmartFit")
+        st.write("**v2.0** - 改進版")
         
         pages = ["首頁", "動作庫", "訓練執行", "統計", "設置"]
         
@@ -572,6 +660,16 @@ def main():
             st.write(f"👤 {st.session_state.user_data['name']}")
             st.write(f"📅 年齡: {st.session_state.user_data['age']}")
             st.write(f"🏋️ 模式: {st.session_state.user_data['mode']}")
+        
+        st.write("---")
+        
+        st.markdown("### 📝 本版本改進：")
+        st.markdown("""
+        ✅ YouTube 連結  
+        ✅ 彩色 Icon  
+        ✅ 健身房模式區分  
+        ✅ 改進的視覺設計
+        """)
     
     # 根据当前页面显示内容
     if st.session_state.current_page == "首頁":
