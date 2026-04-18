@@ -214,7 +214,7 @@ else:
     if "workout" not in st.session_state:
         st.session_state.workout = None
     if "exercise_weights" not in st.session_state:
-        st.session_state.exercise_weights = {}  # 儲存每個動作的重量
+        st.session_state.exercise_weights = {}
     if "rest_timer_active" not in st.session_state:
         st.session_state.rest_timer_active = False
     if "rest_end_time" not in st.session_state:
@@ -312,7 +312,6 @@ else:
                 st.divider()
                 st.subheader("📋 已選動作清單")
                 
-                # 顯示動作列表並可取消
                 for idx, ex in enumerate(selected_exercises_list):
                     col_ex, col_cancel = st.columns([9, 1])
                     
@@ -373,7 +372,6 @@ else:
                         st.session_state.rest_skipped = True
                         st.rerun()
                 
-                # 實時倒數
                 import time
                 for i in range(int(remaining), 0, -1):
                     time.sleep(1)
@@ -439,7 +437,6 @@ else:
             weight = 0
             if ex['require_weight']:
                 with col_data2:
-                    # 使用儲存的重量作為預設值（同一動作的所有組）
                     exercise_key = f"{ex['id']}"
                     default_weight = st.session_state.exercise_weights.get(exercise_key, 0.0)
                     
@@ -452,7 +449,6 @@ else:
                         key=f"weight_{current_ex_idx}_{current_set}"
                     )
                     
-                    # 儲存重量供後續組使用
                     st.session_state.exercise_weights[exercise_key] = weight
                     
                     if past_best_weight and weight > past_best_weight:
@@ -496,7 +492,6 @@ else:
                     }
                     
                     if current_set < ex["sets"]:
-                        # 開始休息計時
                         rest_time = REST_TIMES.get(ex['difficulty'], 60)
                         st.session_state.rest_timer_active = True
                         st.session_state.rest_end_time = datetime.now() + timedelta(seconds=rest_time)
@@ -528,6 +523,42 @@ else:
                     st.session_state.page = "stats"
                     st.balloons()
                     st.rerun()
+        else:
+            # 訓練完成，顯示完成界面
+            st.success("🎉 訓練完成！")
+            st.divider()
+            
+            dur = int((datetime.now() - st.session_state.workout["start"]).total_seconds() / 60)
+            total_volume = sum(log.get("volume", 0) for log in st.session_state.workout_log.values())
+            
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("動作數", len(exs))
+            col2.metric("組數", sum(e["sets"] for e in exs))
+            col3.metric("時長", f"{dur}分")
+            col4.metric("總Volume", f"{int(total_volume)}")
+            
+            st.divider()
+            
+            if st.button("📊 查看統計", use_container_width=True, type="primary", key="view_stats_btn"):
+                dur = int((datetime.now() - st.session_state.workout["start"]).total_seconds() / 60)
+                total_volume = sum(log.get("volume", 0) for log in st.session_state.workout_log.values())
+                
+                record = {
+                    "日期": datetime.now().strftime("%Y-%m-%d"),
+                    "動作數": len(exs),
+                    "組數": sum(e["sets"] for e in exs),
+                    "時長(分)": dur,
+                    "熱量": int(dur * 7),
+                    "總Volume": int(total_volume),
+                    "詳細": json.dumps(st.session_state.workout_log)
+                }
+                
+                save_user_data(user_id, {**user_data, "records": user_data.get("records", []) + [record]})
+                
+                st.session_state.workout = None
+                st.session_state.page = "stats"
+                st.balloons()
+                st.rerun()
     
     # ==================== 統計 ====================
     elif st.session_state.page == "stats":
@@ -585,9 +616,10 @@ else:
         
         st.divider()
         st.success("""
-        ✅ SmartFit v17 - 完整優化版
+        ✅ SmartFit v18 - 完成後自動跳轉統計
         
         🎯 功能：
+        ✅ 訓練完成自動跳轉統計頁
         ✅ 休息計時器（可跳過）
         ✅ 重量記憶（同動作共用）
         ✅ 已選動作可取消
