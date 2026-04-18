@@ -31,7 +31,7 @@ EXERCISES = [
     {"id": "019", "nameCN": "爬山者", "bodyPart": "核心", "difficulty": "中級", "sets": 3, "reps": 20, "category": "徒手/啞鈴", "equipment": "無", "filename": "mountain_climbers.jpg", "tips": ["快速交替", "保持俯臥撑", "核心緊縮"]},
     {"id": "020", "nameCN": "抬腿", "bodyPart": "核心", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "無", "filename": "leg_raises.jpg", "tips": ["背部貼地", "腿部直", "控制速度"]},
     
-    # 健身房儀器 (21-50) - 21-27 有圖片
+    # 健身房儀器 (21-50)
     {"id": "021", "nameCN": "槓鈴臥推", "bodyPart": "胸部", "difficulty": "中級", "sets": 4, "reps": 8, "category": "健身房儀器", "equipment": "槓鈴", "filename": "barbell_bench.jpg", "tips": ["背貼板", "肩膀穩定", "平順動作"]},
     {"id": "022", "nameCN": "胸部推蹬機", "bodyPart": "胸部", "difficulty": "初級", "sets": 3, "reps": 12, "category": "健身房儀器", "equipment": "推蹬機", "filename": "chest_machine.jpg", "tips": ["坐直對齊", "完全推出", "控制回放"]},
     {"id": "023", "nameCN": "拉力機夾胸", "bodyPart": "胸部", "difficulty": "中級", "sets": 3, "reps": 12, "category": "健身房儀器", "equipment": "拉力機", "filename": "cable_flyes.jpg", "tips": ["手臂微彎", "控制回放", "集中收縮"]},
@@ -64,6 +64,34 @@ EXERCISES = [
     {"id": "050", "nameCN": "懸掛抬腿", "bodyPart": "核心", "difficulty": "中級", "sets": 3, "reps": 10, "category": "健身房儀器", "equipment": "單槓", "filename": None, "tips": ["握把穩定", "腿抬至水平", "控制下降"]},
 ]
 
+# ==================== 訓練建議 ====================
+TRAINING_SUGGESTIONS = {
+    15: {
+        "name": "快速訓練 (15分)",
+        "desc": "3-4個動作，低組數",
+        "exercises_count": (3, 4),
+        "sets_multiplier": 1,
+    },
+    30: {
+        "name": "標準訓練 (30分)",
+        "desc": "5-6個動作，中等組數",
+        "exercises_count": (5, 6),
+        "sets_multiplier": 1,
+    },
+    45: {
+        "name": "加強訓練 (45分)",
+        "desc": "7-8個動作，正常組數",
+        "exercises_count": (7, 8),
+        "sets_multiplier": 1,
+    },
+    60: {
+        "name": "完整訓練 (60分)",
+        "desc": "9-10個動作，高組數或更多動作",
+        "exercises_count": (9, 10),
+        "sets_multiplier": 1.2,
+    },
+}
+
 # ==================== Session State ====================
 if "page" not in st.session_state:
     st.session_state.page = "home"
@@ -73,10 +101,10 @@ if "records" not in st.session_state:
     st.session_state.records = []
 if "workout" not in st.session_state:
     st.session_state.workout = None
-if "current_ex" not in st.session_state:
-    st.session_state.current_ex = None
-if "progress" not in st.session_state:
-    st.session_state.progress = {"ex_idx": 0, "sets": 1, "reps": 1}
+if "current_set" not in st.session_state:
+    st.session_state.current_set = 1
+if "current_ex_idx" not in st.session_state:
+    st.session_state.current_ex_idx = 0
 if "selected_exercises" not in st.session_state:
     st.session_state.selected_exercises = []
 
@@ -87,11 +115,16 @@ def get_exercises(body_parts, category):
 def display_image(filename):
     """直接用 data URL 顯示圖片"""
     if filename and filename in IMAGES_DATA:
-        st.image(IMAGES_DATA[filename])
+        st.image(IMAGES_DATA[filename], use_column_width=True)
         return True
-    else:
-        st.warning("⏳ 圖片準備中...")
-        return False
+    return False
+
+def calculate_estimated_time(exercises):
+    """計算預計訓練時間"""
+    total_sets = sum(e["sets"] for e in exercises)
+    # 每組約 1-2 分鐘，加上休息時間
+    estimated = int(total_sets * 1.5 + len(exercises) * 0.5)
+    return estimated
 
 # ==================== 側邊欄 ====================
 with st.sidebar:
@@ -120,6 +153,14 @@ if st.session_state.page == "home":
     with col2:
         duration = st.radio("訓練時長", [15, 30, 45, 60], horizontal=True, key="duration_select")
     
+    # 顯示訓練建議
+    suggestion = TRAINING_SUGGESTIONS[duration]
+    st.info(f"""
+    📋 {suggestion['name']}
+    {suggestion['desc']}
+    建議選擇 {suggestion['exercises_count'][0]}-{suggestion['exercises_count'][1]} 個動作
+    """)
+    
     st.divider()
     st.subheader("🎯 選擇訓練部位")
     cols = st.columns(3)
@@ -141,118 +182,124 @@ if st.session_state.page == "home":
             
             st.session_state.selected_exercises = []
             
+            # 分為兩列顯示
+            cols = st.columns(2)
+            col_idx = 0
+            
             for ex in all_exercises:
-                col1, col2, col3, col4 = st.columns([2, 0.8, 1, 1.2])
-                with col1:
-                    has_img = "✅" if ex["filename"] and ex["filename"] in IMAGES_DATA else "⏳"
-                    st.write(f"{has_img} **{ex['nameCN']}** ({ex['difficulty']})")
-                with col2:
-                    if st.checkbox("選", key=f"select_{ex['id']}"):
+                with cols[col_idx % 2]:
+                    # 圖片在上面
+                    if ex["filename"] and ex["filename"] in IMAGES_DATA:
+                        st.image(IMAGES_DATA[ex["filename"]], use_column_width=True)
+                    else:
+                        st.info("⏳ 圖片準備中")
+                    
+                    # 動作資訊
+                    st.write(f"**{ex['nameCN']}**")
+                    st.write(f"難度: {ex['difficulty']} | 部位: {ex['bodyPart']}")
+                    st.write(f"建議: {ex['sets']}組 × {ex['reps']}次 | 器材: {ex['equipment']}")
+                    
+                    # 選擇按鈕
+                    if st.checkbox("✅ 選擇這個動作", key=f"select_{ex['id']}"):
                         if ex not in st.session_state.selected_exercises:
                             st.session_state.selected_exercises.append(ex)
-                with col3:
-                    st.write(f"{ex['sets']}×{ex['reps']}")
-                with col4:
-                    if st.button("👀", key=f"btn_detail_{ex['id']}", help="查看詳情"):
-                        st.session_state.current_ex = ex
-                        st.session_state.page = "detail"
-                        st.rerun()
+                    
+                    st.divider()
+                    col_idx += 1
             
             st.divider()
             
             if st.session_state.selected_exercises:
-                st.success(f"✅ 已選擇 {len(st.session_state.selected_exercises)} 個動作")
-                if st.button("🎬 開始訓練", use_container_width=True, key="btn_start"):
-                    st.session_state.workout = {"exercises": st.session_state.selected_exercises, "start": datetime.now(), "duration": duration}
-                    st.session_state.progress = {"ex_idx": 0, "sets": 1, "reps": 1}
+                selected_count = len(st.session_state.selected_exercises)
+                total_sets = sum(e["sets"] for e in st.session_state.selected_exercises)
+                estimated_time = calculate_estimated_time(st.session_state.selected_exercises)
+                
+                st.success(f"✅ 已選擇 {selected_count} 個動作 | 總共 {total_sets} 組 | 預計時間: {estimated_time} 分鐘")
+                
+                if st.button("🎬 開始訓練", use_container_width=True, key="btn_start", type="primary"):
+                    st.session_state.workout = {
+                        "exercises": st.session_state.selected_exercises,
+                        "start": datetime.now(),
+                        "duration": duration
+                    }
+                    st.session_state.current_set = 1
+                    st.session_state.current_ex_idx = 0
                     st.session_state.page = "workout"
                     st.rerun()
-
-# ==================== 動作詳情 ====================
-elif st.session_state.page == "detail":
-    if st.session_state.current_ex:
-        ex = st.session_state.current_ex
-        st.title(f"{ex['nameCN']}")
-        
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.write(f"**難度**: {ex['difficulty']} | **部位**: {ex['bodyPart']}")
-            st.write(f"**推薦**: {ex['sets']}×{ex['reps']} | **器材**: {ex['equipment']}")
-            st.subheader("✅ 執行技巧")
-            for tip in ex["tips"]:
-                st.write(f"• {tip}")
-        with col2:
-            if ex["filename"]:
-                display_image(ex["filename"])
-        
-        if st.button("⬅️ 返回首頁"):
-            st.session_state.page = "home"
-            st.rerun()
+            else:
+                st.info("👈 請先選擇要訓練的動作")
 
 # ==================== 訓練執行 ====================
 elif st.session_state.page == "workout":
     if st.session_state.workout:
         exs = st.session_state.workout["exercises"]
-        prog = st.session_state.progress
-        idx = prog["ex_idx"]
+        current_ex_idx = st.session_state.current_ex_idx
+        current_set = st.session_state.current_set
         
-        st.progress(idx / len(exs) if len(exs) > 0 else 0, text=f"進度: {idx}/{len(exs)}")
+        # 進度條
+        total_sets = sum(e["sets"] for e in exs)
+        completed_sets = sum(exs[i]["sets"] for i in range(current_ex_idx)) + (current_set - 1)
+        progress = completed_sets / total_sets
         
-        if idx < len(exs):
-            ex = exs[idx]
+        st.progress(progress, text=f"進度: {completed_sets}/{total_sets} 組")
+        
+        if current_ex_idx < len(exs):
+            ex = exs[current_ex_idx]
             
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.title(f"{ex['nameCN']}")
-                st.write(f"部位: {ex['bodyPart']} | 難度: {ex['difficulty']}")
-                st.write(f"器材: {ex['equipment']}")
-            with col2:
-                if ex["filename"]:
-                    display_image(ex["filename"])
+            # 上下分割：圖片在上，信息在下
+            col1, col2 = st.columns([1.5, 1])
             
-            col1, col2 = st.columns(2)
             with col1:
-                st.metric("組", prog["sets"])
+                st.subheader(f"動作 {current_ex_idx + 1}/{len(exs)}: {ex['nameCN']}")
+                if ex["filename"] and ex["filename"] in IMAGES_DATA:
+                    st.image(IMAGES_DATA[ex["filename"]], use_column_width=True)
+                else:
+                    st.info("⏳ 圖片準備中")
+            
             with col2:
-                st.metric("次", prog["reps"])
+                st.write(f"**難度**: {ex['difficulty']}")
+                st.write(f"**部位**: {ex['bodyPart']}")
+                st.write(f"**器材**: {ex['equipment']}")
+                st.divider()
+                
+                # 大字顯示組數
+                st.metric("當前組數", f"{current_set}/{ex['sets']}")
+                st.metric("每組次數", ex['reps'])
+                
+                st.divider()
+                st.subheader("執行技巧:")
+                for tip in ex["tips"]:
+                    st.write(f"✅ {tip}")
             
             st.divider()
-            st.subheader("執行技巧:")
-            for tip in ex["tips"]:
-                st.write(f"✅ {tip}")
             
-            st.divider()
+            # 控制按鈕
             c1, c2, c3 = st.columns(3)
             
             with c1:
-                if st.button("⏭️ 跳過", use_container_width=True, key="btn_skip"):
-                    st.session_state.progress["ex_idx"] += 1
-                    st.session_state.progress["sets"] = 1
-                    st.session_state.progress["reps"] = 1
+                if st.button("⏭️ 跳過動作", use_container_width=True, key="btn_skip"):
+                    st.session_state.current_ex_idx += 1
+                    st.session_state.current_set = 1
                     st.rerun()
             
             with c2:
-                if st.button("✅ 完成一次", use_container_width=True, key="btn_done"):
-                    if prog["reps"] < ex["reps"]:
-                        st.session_state.progress["reps"] += 1
+                if st.button("✅ 完成這組", use_container_width=True, key="btn_done", type="primary"):
+                    if current_set < ex["sets"]:
+                        st.session_state.current_set += 1
                     else:
-                        if prog["sets"] < ex["sets"]:
-                            st.session_state.progress["sets"] += 1
-                            st.session_state.progress["reps"] = 1
-                        else:
-                            st.session_state.progress["ex_idx"] += 1
-                            st.session_state.progress["sets"] = 1
-                            st.session_state.progress["reps"] = 1
+                        st.session_state.current_ex_idx += 1
+                        st.session_state.current_set = 1
                     st.rerun()
             
             with c3:
-                if st.button("⏹️ 結束", use_container_width=True, key="btn_finish"):
+                if st.button("⏹️ 結束訓練", use_container_width=True, key="btn_finish"):
                     dur = int((datetime.now() - st.session_state.workout["start"]).total_seconds() / 60)
                     st.session_state.records.append({
                         "日期": datetime.now().strftime("%Y-%m-%d"),
                         "動作": len(exs),
+                        "組數": sum(e["sets"] for e in exs),
                         "時長(分)": dur,
-                        "熱量": dur * 7
+                        "熱量": int(dur * 7)
                     })
                     st.session_state.workout = None
                     st.session_state.page = "stats"
@@ -261,20 +308,22 @@ elif st.session_state.page == "workout":
         else:
             st.success("🎉 訓練完成！")
             dur = int((datetime.now() - st.session_state.workout["start"]).total_seconds() / 60)
-            c1, c2, c3 = st.columns(3)
-            c1.metric("動作", len(exs))
-            c2.metric("時長", f"{dur}分")
-            c3.metric("熱量", dur * 7)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("動作數", len(exs))
+            c2.metric("組數", sum(e["sets"] for e in exs))
+            c3.metric("時長", f"{dur}分")
+            c4.metric("熱量", int(dur * 7))
 
 # ==================== 統計 ====================
 elif st.session_state.page == "stats":
     st.title("📊 訓練統計")
     if st.session_state.records:
         df = pd.DataFrame(st.session_state.records)
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("訓練次", len(st.session_state.records))
+        c2.metric("總組數", df['組數'].sum())
         c2.metric("總時長", f"{df['時長(分)'].sum()}分")
-        c3.metric("總熱量", df['熱量'].sum())
+        c4.metric("總熱量", df['熱量'].sum())
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.info("還沒有訓練記錄")
@@ -286,9 +335,18 @@ elif st.session_state.page == "settings":
     st.session_state.user["age"] = st.slider("年齡", 15, 100, st.session_state.user["age"])
     
     c1, c2, c3 = st.columns(3)
-    c1.metric("版本", "10.0 完整版")
+    c1.metric("版本", "11.0 優化版")
     c2.metric("動作", "50")
     c3.metric("圖片進度", "27/50 (54%)")
     
     st.divider()
-    st.success("✅ SmartFit v10 - 27張圖片已完全集成！")
+    st.success("""
+    ✅ SmartFit v11 - 全新優化版本
+    
+    🎯 改進項目：
+    ✅ 組數計算（不再用次數）
+    ✅ 訓練時長與動作數關聯
+    ✅ 智能訓練建議
+    ✅ 動作配圖展示（無需點開）
+    ✅ 預計訓練時間提示
+    """)
