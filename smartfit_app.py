@@ -27,14 +27,14 @@ EXERCISES = [
     {"id": "009", "nameCN": "啞鈴划船", "bodyPart": "背部", "target_muscle": "背肌", "difficulty": "中級", "sets": 4, "reps": 10, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": "dumbbell_rows.jpg", "require_weight": True, "tempo": "下放2秒 拉起1秒", "risk_areas": ["肩膀", "腰部"], "intensity_reduction_possible": True, "tips": ["膝蓋跪", "核心穩定", "拉至腰"]},
     {"id": "010", "nameCN": "超人式", "bodyPart": "背部", "target_muscle": "背肌", "difficulty": "初級", "sets": 3, "reps": 30, "category": "徒手/啞鈴", "equipment": "無", "filename": "superman_hold.jpg", "require_weight": False, "tempo": "靜止2秒", "risk_areas": ["下背部", "腰部"], "intensity_reduction_possible": False, "tips": ["手臂前伸", "腿後伸", "胸部離地"]},
     
-    # 徒手/啞鈴 - 肩膀 (5個) - 新增
+    # 徒手/啞鈴 - 肩膀 (5個)
     {"id": "051", "nameCN": "啞鈴肩推", "bodyPart": "肩膀", "target_muscle": "肩肌", "difficulty": "中級", "sets": 3, "reps": 10, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "下放2秒 推起1秒", "risk_areas": ["肩膀", "肘部"], "intensity_reduction_possible": True, "tips": ["挺胸", "肩膀穩定", "完整範圍"]},
     {"id": "052", "nameCN": "啞鈴側平舉", "bodyPart": "肩膀", "target_muscle": "肩肌", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升2秒 下放2秒", "risk_areas": ["肩膀"], "intensity_reduction_possible": True, "tips": ["挺胸", "肘部微彎", "控制速度"]},
     {"id": "053", "nameCN": "啞鈴前平舉", "bodyPart": "肩膀", "target_muscle": "肩肌", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升1秒 下放2秒", "risk_areas": ["肩膀"], "intensity_reduction_possible": True, "tips": ["肘部微彎", "緩慢控制", "完整動作"]},
     {"id": "054", "nameCN": "啞鈴後舉飛鳥", "bodyPart": "肩膀", "target_muscle": "肩肌", "difficulty": "中級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升2秒 下放2秒", "risk_areas": ["肩膀"], "intensity_reduction_possible": True, "tips": ["身體前傾", "肘部微彎", "集中收縮"]},
     {"id": "055", "nameCN": "肩部聳動", "bodyPart": "肩膀", "target_muscle": "肩肌", "difficulty": "初級", "sets": 3, "reps": 15, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升1秒 下放1秒", "risk_areas": ["肩膀"], "intensity_reduction_possible": True, "tips": ["肩膀聳起", "頂部停留", "控制下降"]},
     
-    # 徒手/啞鈴 - 手臂 (5個) - 新增
+    # 徒手/啞鈴 - 手臂 (5個)
     {"id": "056", "nameCN": "啞鈴彎舉", "bodyPart": "手臂", "target_muscle": "二頭肌", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升1秒 下放2秒", "risk_areas": ["肘部"], "intensity_reduction_possible": True, "tips": ["肘部固定", "完全收縮", "控制速度"]},
     {"id": "057", "nameCN": "錘式彎舉", "bodyPart": "手臂", "target_muscle": "二頭肌", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "上升1秒 下放2秒", "risk_areas": ["肘部"], "intensity_reduction_possible": True, "tips": ["握把中立", "肘部穩定", "完整範圍"]},
     {"id": "058", "nameCN": "啞鈴三頭伸展", "bodyPart": "手臂", "target_muscle": "三頭肌", "difficulty": "初級", "sets": 3, "reps": 12, "category": "徒手/啞鈴", "equipment": "啞鈴", "filename": None, "require_weight": True, "tempo": "下放2秒 推起1秒", "risk_areas": ["肘部", "肩膀"], "intensity_reduction_possible": True, "tips": ["肘部靠近", "完全伸展", "控制速度"]},
@@ -178,7 +178,7 @@ if "user_id" not in st.session_state:
                 st.session_state.user_id = user_id
                 st.session_state.username = username
                 st.session_state.page = "home"
-                st.session_state.selected_parts = []  # 初始化選擇的部位
+                st.session_state.selected_parts = []
                 
                 if is_new:
                     st.success(f"✅ 歡迎新用戶 {username}！")
@@ -213,6 +213,14 @@ else:
         st.session_state.page = "home"
     if "workout" not in st.session_state:
         st.session_state.workout = None
+    if "exercise_weights" not in st.session_state:
+        st.session_state.exercise_weights = {}  # 儲存每個動作的重量
+    if "rest_timer_active" not in st.session_state:
+        st.session_state.rest_timer_active = False
+    if "rest_end_time" not in st.session_state:
+        st.session_state.rest_end_time = None
+    if "rest_skipped" not in st.session_state:
+        st.session_state.rest_skipped = False
     
     st.set_page_config(page_title="SmartFit", page_icon="💪", layout="wide")
     
@@ -264,7 +272,6 @@ else:
                 if is_checked:
                     selected_parts.append(part)
         
-        # 保存選擇的部位
         st.session_state.selected_parts = selected_parts
         
         if selected_parts:
@@ -275,32 +282,27 @@ else:
             
             st.subheader(f"🏆 可用動作 ({len(all_exercises)}個)")
             
-            # 保存已選擇的動作
             selected_exercises_list = st.session_state.selected_exercises_list
             
             cols = st.columns(2)
             for i, ex in enumerate(all_exercises):
                 with cols[i % 2]:
-                    # 圖片顯示
                     if ex["filename"] and ex["filename"] in IMAGES_DATA:
                         st.image(IMAGES_DATA[ex["filename"]], use_column_width=True)
                     else:
                         st.info("⏳ 圖片準備中")
                     
-                    # 動作信息
                     st.write(f"**{ex['nameCN']}**")
                     st.write(f"難度: {ex['difficulty']} | {ex['sets']}組 × {ex['reps']}次")
                     
                     if ex['nameCN'] in warnings:
                         st.warning("⚠️ 請減輕重量")
                     
-                    # 複選框
                     is_selected = any(selected.get("id") == ex["id"] for selected in selected_exercises_list)
                     if st.checkbox("✅ 選", value=is_selected, key=f"select_{ex['id']}"):
                         if not is_selected:
                             selected_exercises_list.append(ex)
                     else:
-                        # 移除未勾選的
                         selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
             
             st.session_state.selected_exercises_list = selected_exercises_list
@@ -310,12 +312,20 @@ else:
                 st.divider()
                 st.subheader("📋 已選動作清單")
                 
-                selected_display = ""
-                for idx, ex in enumerate(selected_exercises_list, 1):
-                    selected_display += f"{idx}. **{ex['nameCN']}** ({ex['sets']}組 × {ex['reps']}次)\n"
+                # 顯示動作列表並可取消
+                for idx, ex in enumerate(selected_exercises_list):
+                    col_ex, col_cancel = st.columns([9, 1])
+                    
+                    with col_ex:
+                        st.write(f"{idx + 1}. **{ex['nameCN']}** ({ex['sets']}組 × {ex['reps']}次)")
+                    
+                    with col_cancel:
+                        if st.button("❌", key=f"remove_{ex['id']}", help="移除此動作"):
+                            selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                            st.session_state.selected_exercises_list = selected_exercises_list
+                            st.rerun()
                 
-                st.markdown(selected_display)
-                
+                st.divider()
                 st.success(f"✅ 已選 {len(selected_exercises_list)} 個動作 | 總組數: {sum(e['sets'] for e in selected_exercises_list)}")
                 
                 if st.button("🎬 開始訓練", use_container_width=True, type="primary", key="start_workout_btn"):
@@ -327,6 +337,7 @@ else:
                     st.session_state.current_ex_idx = 0
                     st.session_state.current_set = 1
                     st.session_state.workout_log = {}
+                    st.session_state.exercise_weights = {}
                     st.session_state.page = "workout"
                     st.rerun()
     
@@ -341,6 +352,39 @@ else:
         progress = completed_sets / total_sets if total_sets > 0 else 0
         
         st.progress(progress, text=f"進度: {completed_sets}/{total_sets} 組")
+        
+        # ============ 休息計時器 ============
+        if st.session_state.rest_timer_active and st.session_state.rest_end_time and not st.session_state.rest_skipped:
+            remaining = (st.session_state.rest_end_time - datetime.now()).total_seconds()
+            if remaining > 0:
+                col_rest1, col_rest2, col_rest3 = st.columns([1, 2, 1])
+                with col_rest2:
+                    st.markdown(f"""
+                    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;'>
+                        <h1 style='color: white; margin: 0;'>⏱️ 休息中</h1>
+                        <h2 style='color: #FFD700; margin: 10px 0;'>{int(remaining)} 秒</h2>
+                        <p style='color: white; margin: 0;'>深呼吸，為下一組做好準備</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                col_skip1, col_skip2, col_skip3 = st.columns([1, 2, 1])
+                with col_skip2:
+                    if st.button("⏭️ 跳過休息", use_container_width=True, key="btn_skip_rest"):
+                        st.session_state.rest_skipped = True
+                        st.rerun()
+                
+                # 實時倒數
+                import time
+                for i in range(int(remaining), 0, -1):
+                    time.sleep(1)
+                    if st.session_state.rest_skipped:
+                        break
+                    st.rerun()
+                
+                st.session_state.rest_timer_active = False
+                st.session_state.rest_skipped = False
+                st.success("✅ 休息時間到！準備下一組")
+                st.rerun()
         
         if current_ex_idx < len(exs):
             ex = exs[current_ex_idx]
@@ -395,13 +439,22 @@ else:
             weight = 0
             if ex['require_weight']:
                 with col_data2:
+                    # 使用儲存的重量作為預設值（同一動作的所有組）
+                    exercise_key = f"{ex['id']}"
+                    default_weight = st.session_state.exercise_weights.get(exercise_key, 0.0)
+                    
                     past_best_weight = get_past_best_weight(records, ex['nameCN'])
                     weight = st.number_input(
                         "重量 (kg/lb)",
                         min_value=0.0,
                         step=0.5,
+                        value=default_weight,
                         key=f"weight_{current_ex_idx}_{current_set}"
                     )
+                    
+                    # 儲存重量供後續組使用
+                    st.session_state.exercise_weights[exercise_key] = weight
+                    
                     if past_best_weight and weight > past_best_weight:
                         st.toast("🔥 突破紀錄了！", icon="🎉")
                     if past_best_weight:
@@ -443,6 +496,11 @@ else:
                     }
                     
                     if current_set < ex["sets"]:
+                        # 開始休息計時
+                        rest_time = REST_TIMES.get(ex['difficulty'], 60)
+                        st.session_state.rest_timer_active = True
+                        st.session_state.rest_end_time = datetime.now() + timedelta(seconds=rest_time)
+                        st.session_state.rest_skipped = False
                         st.session_state.current_set += 1
                     else:
                         st.session_state.current_ex_idx += 1
@@ -527,13 +585,12 @@ else:
         
         st.divider()
         st.success("""
-        ✅ SmartFit v16 - 完整系統
+        ✅ SmartFit v17 - 完整優化版
         
         🎯 功能：
-        ✅ 多用戶獨立登入
-        ✅ 訓練部位選擇記憶
-        ✅ 已選動作清單顯示
-        ✅ 智能傷病過濾
-        ✅ 完整訓練記錄
-        ✅ 肩膀/手臂動作增加
+        ✅ 休息計時器（可跳過）
+        ✅ 重量記憶（同動作共用）
+        ✅ 已選動作可取消
+        ✅ 多用戶獨立記錄
+        ✅ 完整訓練系統
         """)
