@@ -217,7 +217,7 @@ elif st.session_state.page == "workout":
                 st.metric("次", prog["reps"])
             
             st.divider()
-            st.subheading("執行技巧:")
+            st.subheader("執行技巧:")
             for tip in ex["tips"]:
                 st.write(f"✅ {tip}")
             
