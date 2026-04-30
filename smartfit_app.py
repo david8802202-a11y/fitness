@@ -364,6 +364,16 @@ else:
     username = st.session_state.username
     user_data = load_user_data(user_id)
     
+    # ===== 自動捲動到頂部(如果有標記) =====
+    if st.session_state.get("scroll_to_top", False):
+        st.session_state.scroll_to_top = False  # 用過就清除
+        st.markdown("""
+        <script>
+            window.parent.document.querySelector('.main').scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        </script>
+        """, unsafe_allow_html=True)
+    
     # 初始化狀態
     for key, default in [
         ("selected_parts", []),
@@ -849,6 +859,9 @@ else:
                 # 記憶下次帶入值
                 st.session_state.exercise_reps[ex_key] = actual_reps
                 
+                # 標記要捲動到頂部
+                st.session_state.scroll_to_top = True
+                
                 # 振動回饋
                 st.markdown("""
                 <script>
@@ -1022,12 +1035,14 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v23 - +/- 按鈕修復版
+            ✅ SmartFit v24 - 自動捲動版
             
-            🆕 修復:
+            🆕 新增:
+            ✅ 完成組數後自動捲到頂部(看下個動作)
+            
+            🎯 v23 修復:
             ✅ +/- 按鈕點擊後數字立即更新
-            ✅ 重量 +/- 按鈕同步問題修復
-            ✅ +/- 按鈕移到輸入框上方(更直覺)
+            ✅ +/- 按鈕移到輸入框上方
             
             🎯 既有功能:
             ✅ 首頁可自訂休息時間(30/60/90/120秒)
