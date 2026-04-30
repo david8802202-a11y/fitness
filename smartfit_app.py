@@ -398,6 +398,23 @@ else:
         duration = st.radio("⏱️ 訓練時長(分鐘)", [15, 30, 45, 60], 
                            horizontal=True, key="duration_radio")
         
+        # 休息時間選擇(新增)
+        rest_options = {
+            "🤖 自動依難度": "auto",
+            "30秒": 30,
+            "60秒": 60,
+            "90秒": 90,
+            "120秒": 120
+        }
+        rest_choice = st.radio(
+            "😴 休息時間",
+            list(rest_options.keys()),
+            horizontal=True,
+            key="rest_time_radio",
+            help="自動依難度:初級60秒 / 中級90秒 / 高級120秒"
+        )
+        rest_setting = rest_options[rest_choice]
+        
         with st.expander("🏥 傷病部位(選填)", expanded=False):
             injured = st.multiselect("選擇受傷部位", INJURY_AREAS, key="injury_select",
                                     label_visibility="collapsed")
@@ -488,7 +505,8 @@ else:
                     st.session_state.workout = {
                         "exercises": selected_exercises_list,
                         "start": datetime.now(),
-                        "duration": duration
+                        "duration": duration,
+                        "rest_setting": rest_setting  # 儲存使用者選的休息時間
                     }
                     st.session_state.current_ex_idx = 0
                     st.session_state.current_set = 1
@@ -800,7 +818,13 @@ else:
                 """, unsafe_allow_html=True)
                 
                 if current_set < ex["sets"]:
-                    rest_time = REST_TIMES.get(ex['difficulty'], 60)
+                    # 根據使用者設定決定休息時間
+                    rest_setting = st.session_state.workout.get("rest_setting", "auto")
+                    if rest_setting == "auto":
+                        rest_time = REST_TIMES.get(ex['difficulty'], 60)
+                    else:
+                        rest_time = int(rest_setting)
+                    
                     st.session_state.rest_timer_active = True
                     st.session_state.rest_end_time = datetime.now() + timedelta(seconds=rest_time)
                     st.session_state.rest_total_seconds = rest_time
@@ -957,9 +981,14 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v20 - 手機加強版
+            ✅ SmartFit v21 - 自訂休息時間版
             
-            🎯 新增功能:
+            🆕 新增功能:
+            ✅ 首頁可自訂休息時間(30/60/90/120秒)
+            ✅ 保留「自動依難度」選項
+            ✅ 雲端儲存(Google Sheets)
+            
+            🎯 既有功能:
             ✅ 全螢幕休息倒數(含進度環)
             ✅ 休息時間 +30/-30 秒調整
             ✅ 下一組/下一動作預告
