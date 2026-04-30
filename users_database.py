@@ -1,7 +1,6 @@
 """
-用戶數據持久化模組 - Google Sheets 版本
-使用 Google Sheets 雲端儲存每個用戶的訓練紀錄
-保留與原 JSON 版本相同的函式介面,主程式無需修改
+用戶數據持久化模組 - Google Sheets 版本 v2
+改成讀取整個 JSON 字串,避免 TOML 格式問題
 """
 import json
 import hashlib
@@ -22,9 +21,15 @@ SCOPES = [
 def _get_gspread_client():
     """
     建立並快取 Google Sheets 連線
-    使用 @st.cache_resource 確保整個 App 只連線一次
+    從 Streamlit Secrets 讀取 JSON 字串,直接 parse
     """
-    creds_dict = dict(st.secrets["gcp_service_account"])
+    # 讀取整個 JSON 字串
+    credentials_json_str = st.secrets["gcp"]["credentials_json"]
+    
+    # parse JSON 成 dict
+    creds_dict = json.loads(credentials_json_str)
+    
+    # 建立認證
     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     client = gspread.authorize(creds)
     return client
@@ -54,7 +59,7 @@ def _get_settings_sheet():
 
 
 # ==================== 快取機制 ====================
-@st.cache_data(ttl=30)  # 快取 30 秒,避免每次都打 API
+@st.cache_data(ttl=30)
 def _cached_get_all_users():
     """快取讀取所有用戶"""
     return _get_users_sheet().get_all_records()
@@ -81,18 +86,12 @@ def _clear_cache():
 
 # ==================== 主要函式(與原版介面相同) ====================
 def init_users_dir():
-    """
-    初始化(原版用來建立目錄,新版不需要)
-    保留是為了相容性,實際上什麼都不做
-    """
+    """原版用來建立目錄,新版不需要(保留為相容性)"""
     pass
 
 
 def get_user_file(user_id):
-    """
-    原版用來取得檔案路徑,新版改用 Google Sheets
-    保留為相容性,但回傳 None
-    """
+    """原版用來取得檔案路徑,新版不適用(保留為相容性)"""
     return None
 
 
@@ -117,19 +116,19 @@ def create_user(username):
     users_sheet.append_row([
         user_id,           # A: user_id
         username,          # B: username
-        "",                # C: password_hash(預留,目前不使用)
-        username,          # D: name(預設等同 username)
-        25,                # E: age(預設值)
+        "",                # C: password_hash(預留)
+        username,          # D: name
+        25,                # E: age
         now                # F: created_at
     ])
     
     # 同時建立預設設定
     settings_sheet = _get_settings_sheet()
     settings_sheet.append_row([
-        user_id,           # A: user_id
-        username,          # B: name
-        25,                # C: age
-        now                # D: updated_at
+        user_id,
+        username,
+        25,
+        now
     ])
     
     _clear_cache()
@@ -137,20 +136,9 @@ def create_user(username):
 
 
 def load_user_data(user_id):
-    """
-    載入用戶數據
-    回傳格式與原版一致:
-    {
-        "username": "...",
-        "user_id": "...",
-        "created_at": "...",
-        "user_info": {"name": "...", "age": ...},
-        "records": [...]
-    }
-    """
+    """載入用戶數據"""
     all_users = _cached_get_all_users()
     
-    # 找用戶基本資料
     user = None
     for u in all_users:
         if u.get("user_id") == user_id:
@@ -168,10 +156,8 @@ def load_user_data(user_id):
             settings = s
             break
     
-    # 取得訓練紀錄
     records = get_records(user_id)
     
-    # 組裝成原版相容格式
     return {
         "username": user.get("username", ""),
         "user_id": user_id,
@@ -185,24 +171,18 @@ def load_user_data(user_id):
 
 
 def save_user_data(user_id, data):
-    """
-    保存用戶數據(完整覆寫)
-    主要用於:儲存新訓練紀錄、更新設定
-    """
+    """保存用戶數據"""
     if not data:
         return
     
-    # 1. 處理訓練紀錄(只新增最後一筆,因為主程式都是 append)
     new_records = data.get("records", [])
     existing_records = get_records(user_id)
     
-    # 找出新增的紀錄(原版用 append,所以新紀錄會在最後)
+    # 只新增多出來的部分
     if len(new_records) > len(existing_records):
-        # 只新增多出來的部分
         for record in new_records[len(existing_records):]:
             _append_record(user_id, record)
     
-    # 2. 處理用戶設定
     user_info = data.get("user_info", {})
     if user_info:
         _update_settings(user_id, user_info.get("name", ""), user_info.get("age", 25))
@@ -211,20 +191,20 @@ def save_user_data(user_id, data):
 
 
 def _append_record(user_id, record):
-    """新增單筆訓練紀錄到 records 工作表"""
+    """新增單筆訓練紀錄"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     records_sheet = _get_records_sheet()
     records_sheet.append_row([
-        user_id,                                    # A: user_id
-        record.get("日期", ""),                     # B: date
-        record.get("動作數", 0),                    # C: exercises_count
-        record.get("組數", 0),                      # D: total_sets
-        record.get("時長(分)", 0),                  # E: duration_min
-        record.get("熱量", 0),                      # F: calories
-        record.get("總Volume", 0),                  # G: total_volume
-        record.get("詳細", "{}"),                   # H: details
-        now                                         # I: created_at
+        user_id,
+        record.get("日期", ""),
+        record.get("動作數", 0),
+        record.get("組數", 0),
+        record.get("時長(分)", 0),
+        record.get("熱量", 0),
+        record.get("總Volume", 0),
+        record.get("詳細", "{}"),
+        now
     ])
 
 
@@ -234,26 +214,23 @@ def _update_settings(user_id, name, age):
     all_settings = _cached_get_all_settings()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # 找該用戶在第幾列
     target_row = None
-    for idx, s in enumerate(all_settings, start=2):  # 第 2 列開始(第 1 列是標題)
+    for idx, s in enumerate(all_settings, start=2):
         if s.get("user_id") == user_id:
             target_row = idx
             break
     
     if target_row:
-        # 更新現有列
         settings_sheet.update(
             f'A{target_row}:D{target_row}',
             [[user_id, name, age, now]]
         )
     else:
-        # 新增列
         settings_sheet.append_row([user_id, name, age, now])
 
 
 def add_record(user_id, record):
-    """新增訓練記錄(原版函式,保留相容性)"""
+    """新增訓練記錄"""
     user = load_user_data(user_id)
     if user:
         _append_record(user_id, record)
@@ -269,7 +246,6 @@ def get_records(user_id):
     user_records = []
     for r in all_records:
         if r.get("user_id") == user_id:
-            # 轉換成原版格式(中文 key)
             user_records.append({
                 "日期": r.get("date", ""),
                 "動作數": int(r.get("exercises_count", 0)) if r.get("exercises_count") != "" else 0,
@@ -302,7 +278,6 @@ def list_all_users():
     all_users = _cached_get_all_users()
     all_records = _cached_get_all_records()
     
-    # 計算每個用戶的紀錄數
     record_counts = {}
     for r in all_records:
         uid = r.get("user_id")
@@ -322,9 +297,8 @@ def list_all_users():
 
 
 def delete_user(user_id):
-    """刪除用戶及其所有數據(用 row 刪除)"""
+    """刪除用戶及其所有數據"""
     try:
-        # 1. 刪除 users 工作表中該用戶
         users_sheet = _get_users_sheet()
         all_users = _cached_get_all_users()
         for idx, u in enumerate(all_users, start=2):
@@ -332,7 +306,6 @@ def delete_user(user_id):
                 users_sheet.delete_rows(idx)
                 break
         
-        # 2. 刪除 settings 工作表中該用戶
         settings_sheet = _get_settings_sheet()
         all_settings = _cached_get_all_settings()
         for idx, s in enumerate(all_settings, start=2):
@@ -340,14 +313,12 @@ def delete_user(user_id):
                 settings_sheet.delete_rows(idx)
                 break
         
-        # 3. 刪除 records 工作表中該用戶的所有紀錄(從後往前刪)
         records_sheet = _get_records_sheet()
         all_records = _cached_get_all_records()
         rows_to_delete = []
         for idx, r in enumerate(all_records, start=2):
             if r.get("user_id") == user_id:
                 rows_to_delete.append(idx)
-        # 從大到小排序,避免刪除時 index 錯位
         for row_idx in sorted(rows_to_delete, reverse=True):
             records_sheet.delete_rows(row_idx)
         
