@@ -729,40 +729,40 @@ else:
             
             # 重量+次數記憶 key
             ex_key = f"ex_{ex['id']}"
-            default_reps = st.session_state.exercise_reps.get(ex_key, ex['reps'])
             
-            # 次數快速調整
-            reps_state_key = f"reps_value_{current_ex_idx}_{current_set}"
-            if reps_state_key not in st.session_state:
-                st.session_state[reps_state_key] = default_reps
+            # number_input 用的 key(統一用這個)
+            reps_input_key = f"reps_input_{current_ex_idx}_{current_set}"
+            
+            # 初始化 number_input 的值(只在第一次設定)
+            if reps_input_key not in st.session_state:
+                default_reps = st.session_state.exercise_reps.get(ex_key, ex['reps'])
+                st.session_state[reps_input_key] = default_reps
+            
+            # 次數快速 +/- 按鈕(放在 number_input 上方,直接改 session_state)
+            rep_cols = st.columns(4)
+            with rep_cols[0]:
+                if st.button("－5", key=f"r_m5_{current_ex_idx}_{current_set}", use_container_width=True):
+                    st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 5)
+                    st.rerun()
+            with rep_cols[1]:
+                if st.button("－1", key=f"r_m1_{current_ex_idx}_{current_set}", use_container_width=True):
+                    st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 1)
+                    st.rerun()
+            with rep_cols[2]:
+                if st.button("＋1", key=f"r_p1_{current_ex_idx}_{current_set}", use_container_width=True):
+                    st.session_state[reps_input_key] = st.session_state[reps_input_key] + 1
+                    st.rerun()
+            with rep_cols[3]:
+                if st.button("＋5", key=f"r_p5_{current_ex_idx}_{current_set}", use_container_width=True):
+                    st.session_state[reps_input_key] = st.session_state[reps_input_key] + 5
+                    st.rerun()
             
             actual_reps = st.number_input(
                 reps_label,
                 min_value=0,
                 max_value=ex['reps'] + 50,
-                value=st.session_state[reps_state_key],
-                key=f"reps_input_{current_ex_idx}_{current_set}"
+                key=reps_input_key
             )
-            st.session_state[reps_state_key] = actual_reps
-            
-            # 次數快速 +/- 按鈕
-            rep_cols = st.columns(4)
-            with rep_cols[0]:
-                if st.button("－5", key=f"r_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_state_key] = max(0, actual_reps - 5)
-                    st.rerun()
-            with rep_cols[1]:
-                if st.button("－1", key=f"r_m1_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_state_key] = max(0, actual_reps - 1)
-                    st.rerun()
-            with rep_cols[2]:
-                if st.button("＋1", key=f"r_p1_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_state_key] = actual_reps + 1
-                    st.rerun()
-            with rep_cols[3]:
-                if st.button("＋5", key=f"r_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_state_key] = actual_reps + 5
-                    st.rerun()
             
             if past_best_reps and actual_reps > past_best_reps:
                 st.toast("🔥 突破紀錄了!", icon="🎉")
@@ -775,48 +775,47 @@ else:
                 if past_best_weight:
                     weight_label += f" (歷史最高 {past_best_weight})"
                 
-                default_weight = st.session_state.exercise_weights.get(ex_key, 0.0)
+                weight_input_key = f"weight_input_{current_ex_idx}_{current_set}"
                 
-                weight_state_key = f"weight_value_{current_ex_idx}_{current_set}"
-                if weight_state_key not in st.session_state:
-                    st.session_state[weight_state_key] = default_weight
+                # 初始化重量(只在第一次)
+                if weight_input_key not in st.session_state:
+                    default_weight = st.session_state.exercise_weights.get(ex_key, 0.0)
+                    st.session_state[weight_input_key] = default_weight
+                
+                # 重量快速 +/- 按鈕(放上方)
+                w_cols = st.columns(6)
+                with w_cols[0]:
+                    if st.button("−10", key=f"w_m10_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 10)
+                        st.rerun()
+                with w_cols[1]:
+                    if st.button("−5", key=f"w_m5_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 5)
+                        st.rerun()
+                with w_cols[2]:
+                    if st.button("−2.5", key=f"w_m25_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 2.5)
+                        st.rerun()
+                with w_cols[3]:
+                    if st.button("+2.5", key=f"w_p25_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 2.5
+                        st.rerun()
+                with w_cols[4]:
+                    if st.button("+5", key=f"w_p5_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 5
+                        st.rerun()
+                with w_cols[5]:
+                    if st.button("+10", key=f"w_p10_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 10
+                        st.rerun()
                 
                 weight = st.number_input(
                     weight_label,
                     min_value=0.0,
                     step=0.5,
-                    value=st.session_state[weight_state_key],
-                    key=f"weight_input_{current_ex_idx}_{current_set}"
+                    key=weight_input_key
                 )
-                st.session_state[weight_state_key] = weight
                 st.session_state.exercise_weights[ex_key] = weight
-                
-                # 重量快速 +/- 按鈕
-                w_cols = st.columns(6)
-                with w_cols[0]:
-                    if st.button("−10", key=f"w_m10_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = max(0.0, weight - 10)
-                        st.rerun()
-                with w_cols[1]:
-                    if st.button("−5", key=f"w_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = max(0.0, weight - 5)
-                        st.rerun()
-                with w_cols[2]:
-                    if st.button("−2.5", key=f"w_m25_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = max(0.0, weight - 2.5)
-                        st.rerun()
-                with w_cols[3]:
-                    if st.button("+2.5", key=f"w_p25_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = weight + 2.5
-                        st.rerun()
-                with w_cols[4]:
-                    if st.button("+5", key=f"w_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = weight + 5
-                        st.rerun()
-                with w_cols[5]:
-                    if st.button("+10", key=f"w_p10_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_state_key] = weight + 10
-                        st.rerun()
                 
                 if past_best_weight and weight > past_best_weight:
                     st.toast("🔥 突破紀錄了!", icon="🎉")
@@ -1023,12 +1022,12 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v22 - 體驗優化版
+            ✅ SmartFit v23 - +/- 按鈕修復版
             
-            🆕 新增功能:
-            ✅ URL 自動登入(加到主畫面就免輸入)
-            ✅ 動作卡片改用按鈕(已選顯示❌取消)
-            ✅ 休息倒數重新設計(跳過按鈕保證可見)
+            🆕 修復:
+            ✅ +/- 按鈕點擊後數字立即更新
+            ✅ 重量 +/- 按鈕同步問題修復
+            ✅ +/- 按鈕移到輸入框上方(更直覺)
             
             🎯 既有功能:
             ✅ 首頁可自訂休息時間(30/60/90/120秒)
