@@ -1,6 +1,5 @@
 streamlit>=1.28.0
-   pandas>=1.5.0
-streamlit
-pandas
+pandas>=1.5.0
+
 gspread
 google-auth
