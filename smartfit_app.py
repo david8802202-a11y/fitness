@@ -305,6 +305,21 @@ def get_last_set_data(workout_log, exercise_name, current_set):
             return log
     return None
 
+# ==================== 自動登入(URL 參數) ====================
+# 檢查 URL 是否帶有 user 參數,有的話自動登入
+query_params = st.query_params
+if "user" in query_params and "user_id" not in st.session_state:
+    auto_username = query_params["user"]
+    if auto_username.strip():
+        try:
+            auto_user_id, _ = create_user(auto_username)
+            st.session_state.user_id = auto_user_id
+            st.session_state.username = auto_username
+            st.session_state.page = "home"
+            st.session_state.selected_parts = []
+        except Exception as e:
+            st.error(f"自動登入失敗: {e}")
+
 # ==================== 登入頁面 ====================
 if "user_id" not in st.session_state:
     st.title("💪 SmartFit")
@@ -320,6 +335,9 @@ if "user_id" not in st.session_state:
             st.session_state.username = username
             st.session_state.page = "home"
             st.session_state.selected_parts = []
+            
+            # 設定 URL 參數,下次自動登入
+            st.query_params["user"] = username
             
             if is_new:
                 st.success(f"✅ 歡迎新用戶 {username}!")
@@ -337,6 +355,7 @@ if "user_id" not in st.session_state:
         - ✅ 數據永久保存
         - ✅ 多人可以共用同一個裝置
         - ✅ 手機優化界面
+        - ✅ **加到主畫面**:登入後將網址加到手機主畫面,下次點開自動登入!
         """)
 
 else:
@@ -459,12 +478,21 @@ else:
                                 st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
                                 if ex['nameCN'] in warnings:
                                     st.warning("⚠️ 請減輕重量")
+                                
+                                # 已選的顯示「❌ 取消」,未選的顯示「✅ 加入訓練」
                                 is_selected = any(s.get("id") == ex["id"] for s in selected_exercises_list)
-                                if st.checkbox("✅ 加入訓練", value=is_selected, key=f"select_{ex['id']}"):
-                                    if not is_selected:
-                                        selected_exercises_list.append(ex)
+                                if is_selected:
+                                    if st.button("❌ 取消選擇", key=f"toggle_{ex['id']}", 
+                                                 use_container_width=True, type="secondary"):
+                                        selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                                        st.session_state.selected_exercises_list = selected_exercises_list
+                                        st.rerun()
                                 else:
-                                    selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                                    if st.button("✅ 加入訓練", key=f"toggle_{ex['id']}", 
+                                                 use_container_width=True, type="primary"):
+                                        selected_exercises_list.append(ex)
+                                        st.session_state.selected_exercises_list = selected_exercises_list
+                                        st.rerun()
             else:
                 for ex in all_exercises:
                     with st.container(border=True):
@@ -476,12 +504,21 @@ else:
                         st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
                         if ex['nameCN'] in warnings:
                             st.warning("⚠️ 請減輕重量")
+                        
+                        # 已選的顯示「❌ 取消」,未選的顯示「✅ 加入訓練」
                         is_selected = any(s.get("id") == ex["id"] for s in selected_exercises_list)
-                        if st.checkbox("✅ 加入訓練", value=is_selected, key=f"select_{ex['id']}"):
-                            if not is_selected:
-                                selected_exercises_list.append(ex)
+                        if is_selected:
+                            if st.button("❌ 取消選擇", key=f"toggle_{ex['id']}", 
+                                         use_container_width=True, type="secondary"):
+                                selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                                st.session_state.selected_exercises_list = selected_exercises_list
+                                st.rerun()
                         else:
-                            selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                            if st.button("✅ 加入訓練", key=f"toggle_{ex['id']}", 
+                                         use_container_width=True, type="primary"):
+                                selected_exercises_list.append(ex)
+                                st.session_state.selected_exercises_list = selected_exercises_list
+                                st.rerun()
             
             st.session_state.selected_exercises_list = selected_exercises_list
             
@@ -526,7 +563,7 @@ else:
         completed_sets = sum(exs[i]["sets"] for i in range(current_ex_idx)) + (current_set - 1)
         progress = completed_sets / total_sets if total_sets > 0 else 0
         
-        # ============ 全螢幕休息倒數覆蓋層 ============
+        # ============ 休息倒數(改用 Streamlit 原生元件) ============
         if st.session_state.rest_timer_active and st.session_state.rest_end_time and not st.session_state.rest_skipped:
             remaining = (st.session_state.rest_end_time - datetime.now()).total_seconds()
             
@@ -534,39 +571,69 @@ else:
                 # 計算下一組/下一動作預告
                 ex_now = exs[current_ex_idx] if current_ex_idx < len(exs) else None
                 if ex_now and current_set <= ex_now["sets"]:
-                    # 還在同一個動作
                     next_info = f"下一組:第 {current_set} 組 / 共 {ex_now['sets']} 組"
-                    next_ex_name = ex_now["nameCN"]
                 else:
-                    # 下一個動作
                     next_idx = current_ex_idx + 1 if current_set > exs[current_ex_idx]["sets"] else current_ex_idx
                     if next_idx < len(exs):
                         next_ex = exs[next_idx]
                         next_info = f"下一個動作:{next_ex['nameCN']}"
-                        next_ex_name = next_ex["nameCN"]
                     else:
                         next_info = "🎉 即將完成所有訓練!"
-                        next_ex_name = ""
                 
-                # 進度環的計算
+                # 進度百分比
                 total = st.session_state.rest_total_seconds
-                progress_pct = max(0, min(100, (1 - remaining / total) * 100)) if total > 0 else 0
+                progress_pct = max(0.0, min(1.0, 1 - (remaining / total))) if total > 0 else 0
                 
-                # 全螢幕覆蓋層
-                st.markdown(f"""
-                <div class="rest-overlay">
-                    <div class="rest-title">⏱️ 休息時間</div>
-                    <div class="rest-circle" style="background: conic-gradient(rgba(255,215,0,0.4) {progress_pct}%, rgba(255,255,255,0.1) {progress_pct}%);">
-                        <div style="background: rgba(102, 126, 234, 0.95); width: 240px; height: 240px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <div class="rest-number">{int(remaining)}</div>
-                            <div class="rest-unit">秒</div>
+                # 用 container 包起來,確保佈局穩定
+                rest_container = st.container()
+                with rest_container:
+                    # 大字體倒數顯示(用 markdown 但不用 fixed position)
+                    st.markdown(f"""
+                    <div style='text-align: center; 
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                padding: 30px 20px; 
+                                border-radius: 16px; 
+                                margin: 10px 0;
+                                box-shadow: 0 4px 20px rgba(102,126,234,0.3);'>
+                        <div style='color: white; font-size: 1.3rem; font-weight: 600; margin-bottom: 8px;'>
+                            ⏱️ 休息中
+                        </div>
+                        <div style='color: #FFD700; font-size: 5rem; font-weight: 800; line-height: 1; margin: 10px 0;'>
+                            {int(remaining)}
+                        </div>
+                        <div style='color: white; font-size: 1.1rem;'>秒</div>
+                        <div style='color: #FFE4B5; font-size: 0.95rem; margin-top: 14px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px;'>
+                            ⏭️ {next_info}
                         </div>
                     </div>
-                    <div class="rest-next">
-                        <div style="font-size: 1.1rem; font-weight: 600;">⏭️ {next_info}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                    
+                    # 進度條(視覺輔助)
+                    st.progress(progress_pct)
+                    
+                    # ===== 跳過按鈕(超大、超明顯)=====
+                    if st.button("⏭️ 跳過休息,直接下一組", 
+                                 use_container_width=True, 
+                                 type="primary", 
+                                 key=f"btn_skip_rest_{int(remaining)}"):
+                        st.session_state.rest_skipped = True
+                        st.session_state.rest_timer_active = False
+                        st.rerun()
+                    
+                    # ===== +/- 30 秒按鈕 =====
+                    adj_col1, adj_col2 = st.columns(2)
+                    with adj_col1:
+                        if st.button("➖ 減 30 秒", 
+                                     use_container_width=True, 
+                                     key=f"btn_minus_30_{int(remaining)}"):
+                            st.session_state.rest_end_time -= timedelta(seconds=30)
+                            st.rerun()
+                    with adj_col2:
+                        if st.button("➕ 加 30 秒", 
+                                     use_container_width=True, 
+                                     key=f"btn_plus_30_{int(remaining)}"):
+                            st.session_state.rest_end_time += timedelta(seconds=30)
+                            st.rerun()
                 
                 # 振動提示(最後 3 秒)
                 if int(remaining) <= 3:
@@ -576,44 +643,14 @@ else:
                     </script>
                     """, unsafe_allow_html=True)
                 
-                # 控制按鈕(放在覆蓋層上方,因為 st 元件預設 z-index 不夠高)
-                # 但 streamlit button 無法在 fixed 容器內,所以用替代方案:
-                # 在頁面底部加按鈕,並提高 z-index
-                st.markdown("""
-                <style>
-                    div[data-testid="stVerticalBlock"] > div:has(> div > div > [data-testid="stButton"]) {
-                        position: fixed !important;
-                        bottom: 30px !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        z-index: 100000 !important;
-                        padding: 0 20px !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                btn_col1, btn_col2, btn_col3 = st.columns(3)
-                with btn_col1:
-                    if st.button("➖ 30秒", use_container_width=True, key="btn_minus_30"):
-                        st.session_state.rest_end_time -= timedelta(seconds=30)
-                        st.rerun()
-                with btn_col2:
-                    if st.button("⏭️ 跳過", use_container_width=True, key="btn_skip_rest", type="primary"):
-                        st.session_state.rest_skipped = True
-                        st.rerun()
-                with btn_col3:
-                    if st.button("➕ 30秒", use_container_width=True, key="btn_plus_30"):
-                        st.session_state.rest_end_time += timedelta(seconds=30)
-                        st.rerun()
-                
-                # 倒數迴圈
+                # 倒數迴圈(每秒重新整理一次)
                 time.sleep(1)
                 st.rerun()
             else:
+                # 倒數結束
                 st.session_state.rest_timer_active = False
                 st.session_state.rest_skipped = False
                 st.success("✅ 休息結束!準備下一組")
-                # 結束時振動
                 st.markdown("""
                 <script>
                     if (navigator.vibrate) { navigator.vibrate([100, 50, 100, 50, 200]); }
@@ -621,6 +658,9 @@ else:
                 """, unsafe_allow_html=True)
                 time.sleep(0.5)
                 st.rerun()
+            
+            # 休息中時停止繼續執行訓練畫面(用 return 不行,因為在 elif 裡)
+            st.stop()
         
         # ============ 正常訓練畫面 ============
         if current_ex_idx < len(exs):
@@ -976,20 +1016,23 @@ else:
         if st.button("🚪 登出", use_container_width=True, key="logout_btn"):
             del st.session_state.user_id
             del st.session_state.username
+            # 清除 URL 參數
+            st.query_params.clear()
             st.rerun()
         
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v21 - 自訂休息時間版
+            ✅ SmartFit v22 - 體驗優化版
             
             🆕 新增功能:
-            ✅ 首頁可自訂休息時間(30/60/90/120秒)
-            ✅ 保留「自動依難度」選項
-            ✅ 雲端儲存(Google Sheets)
+            ✅ URL 自動登入(加到主畫面就免輸入)
+            ✅ 動作卡片改用按鈕(已選顯示❌取消)
+            ✅ 休息倒數重新設計(跳過按鈕保證可見)
             
             🎯 既有功能:
-            ✅ 全螢幕休息倒數(含進度環)
+            ✅ 首頁可自訂休息時間(30/60/90/120秒)
+            ✅ 雲端儲存(Google Sheets)
             ✅ 休息時間 +30/-30 秒調整
             ✅ 下一組/下一動作預告
             ✅ 上一組數據顯示
