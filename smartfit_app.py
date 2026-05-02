@@ -748,11 +748,12 @@ else:
             
             # ─────── Tab 1:動作說明 ───────
             with tab_action:
-                # 動作圖片
-                if ex["filename"] and ex["filename"] in IMAGES_DATA:
-                    st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
-                else:
-                    st.info("⏳ 圖片準備中")
+                # 動作圖片(預設摺疊,需要才打開)
+                with st.expander("🖼️ 點擊查看動作示範", expanded=False):
+                    if ex["filename"] and ex["filename"] in IMAGES_DATA:
+                        st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
+                    else:
+                        st.info("⏳ 圖片準備中")
                 
                 # 執行技巧
                 st.markdown("**💡 執行技巧:**")
@@ -773,18 +774,18 @@ else:
                     next_text = "🎉 **這是最後一組!**"
                 st.info(next_text)
             
-            # ─────── Tab 2:紀錄這組 ───────
+            # ─────── Tab 2:紀錄這組(簡化版) ───────
             with tab_record:
                 records = get_records(user_id) or []
                 workout_log = st.session_state.get("workout_log", {})
                 last_set = get_last_set_data(workout_log, ex['nameCN'], current_set)
                 
-                # 上一組數據顯示
+                # 上一組數據顯示(已砍疲勞度)
                 if last_set:
                     last_weight_str = f" · 重量 {last_set.get('weight', 0)}kg" if last_set.get('weight') else ""
-                    st.caption(f"📋 上一組:{last_set.get('reps', 0)} 次{last_weight_str} · 疲勞 {last_set.get('fatigue', '-')}/10")
+                    st.caption(f"📋 上一組:{last_set.get('reps', 0)} 次{last_weight_str}")
                 
-                # ----- 次數輸入(含快速 +/-) -----
+                # ----- 次數輸入(已砍 +/- 按鈕)-----
                 past_best_reps = get_past_best_reps(records, ex['nameCN'])
                 reps_label = "💪 完成次數"
                 if past_best_reps:
@@ -797,25 +798,6 @@ else:
                     default_reps = st.session_state.exercise_reps.get(ex_key, ex['reps'])
                     st.session_state[reps_input_key] = default_reps
                 
-                # 次數快速 +/- 按鈕
-                rep_cols = st.columns(4)
-                with rep_cols[0]:
-                    if st.button("－5", key=f"r_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 5)
-                        st.rerun()
-                with rep_cols[1]:
-                    if st.button("－1", key=f"r_m1_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 1)
-                        st.rerun()
-                with rep_cols[2]:
-                    if st.button("＋1", key=f"r_p1_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[reps_input_key] = st.session_state[reps_input_key] + 1
-                        st.rerun()
-                with rep_cols[3]:
-                    if st.button("＋5", key=f"r_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[reps_input_key] = st.session_state[reps_input_key] + 5
-                        st.rerun()
-                
                 actual_reps = st.number_input(
                     reps_label,
                     min_value=0,
@@ -826,7 +808,7 @@ else:
                 if past_best_reps and actual_reps > past_best_reps:
                     st.toast("🔥 突破紀錄了!", icon="🎉")
                 
-                # ----- 重量輸入(含快速 +/-) -----
+                # ----- 重量輸入(已砍 +/- 按鈕)-----
                 weight = 0
                 if ex['require_weight']:
                     past_best_weight = get_past_best_weight(records, ex['nameCN'])
@@ -840,33 +822,6 @@ else:
                         default_weight = st.session_state.exercise_weights.get(ex_key, 0.0)
                         st.session_state[weight_input_key] = default_weight
                     
-                    # 重量快速 +/- 按鈕
-                    w_cols = st.columns(6)
-                    with w_cols[0]:
-                        if st.button("−10", key=f"w_m10_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 10)
-                            st.rerun()
-                    with w_cols[1]:
-                        if st.button("−5", key=f"w_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 5)
-                            st.rerun()
-                    with w_cols[2]:
-                        if st.button("−2.5", key=f"w_m25_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 2.5)
-                            st.rerun()
-                    with w_cols[3]:
-                        if st.button("+2.5", key=f"w_p25_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 2.5
-                            st.rerun()
-                    with w_cols[4]:
-                        if st.button("+5", key=f"w_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 5
-                            st.rerun()
-                    with w_cols[5]:
-                        if st.button("+10", key=f"w_p10_{current_ex_idx}_{current_set}", use_container_width=True):
-                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 10
-                            st.rerun()
-                    
                     weight = st.number_input(
                         weight_label,
                         min_value=0.0,
@@ -878,12 +833,9 @@ else:
                     if past_best_weight and weight > past_best_weight:
                         st.toast("🔥 突破紀錄了!", icon="🎉")
                 
-                # ----- 疲勞度 -----
-                fatigue = st.slider(
-                    "😓 疲勞度 (1=輕鬆 / 10=力竭)",
-                    1, 10, 5,
-                    key=f"fatigue_{current_ex_idx}_{current_set}"
-                )
+                # 已砍掉疲勞度滑桿
+                
+                st.divider()
                 
                 # ===== 主操作按鈕(完成這組) =====
                 if st.button("✅ 完成這組", use_container_width=True, type="primary", key="btn_done"):
@@ -898,7 +850,7 @@ else:
                         "set": current_set,
                         "reps": actual_reps,
                         "weight": weight if ex['require_weight'] else None,
-                        "fatigue": fatigue,
+                        "fatigue": 5,  # 預設值,不再要求使用者填
                         "volume": volume
                     }
                     
@@ -1076,20 +1028,21 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v26 - Tab 分頁體驗大改版
+            ✅ SmartFit v27 - 極簡操作版
             
-            🆕 重大改造:
-            ✅ 訓練畫面用 Tab 分頁(動作 / 紀錄)
-            ✅ 目標數放最顯眼位置(本組目標)
-            ✅ 已選動作摺疊在最上方
-            ✅ 已選的動作從可用清單消失
-            ✅ 大幅減少滑動需求
+            🆕 簡化:
+            ✅ 砍掉 +/- 按鈕(直接打數字)
+            ✅ 砍掉疲勞度(用不到)
+            ✅ 動作圖片預設摺疊(節省空間)
+            ✅ 訓練流程更精簡
             
             🎯 既有功能:
+            ✅ Tab 分頁設計(動作/紀錄)
+            ✅ 目標數醒目顯示
+            ✅ 已選動作摺疊
             ✅ 自訂休息時間
             ✅ URL 自動登入
             ✅ Google Sheets 雲端儲存
-            ✅ 休息倒數可跳過/+30/-30秒
             
             🎯 v23 修復:
             ✅ +/- 按鈕點擊後數字立即更新
