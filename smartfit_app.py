@@ -503,61 +503,69 @@ else:
                         st.write(f"❌ {k} → ✅ {v}")
             
             st.divider()
-            st.markdown(f"#### 🏆 可用動作 ({len(all_exercises)}個)")
             
             selected_exercises_list = st.session_state.selected_exercises_list
             
-            if len(selected_parts) > 1:
-                tabs = st.tabs(selected_parts)
-                for tab, part in zip(tabs, selected_parts):
-                    with tab:
-                        part_exercises = [e for e in all_exercises if e['bodyPart'] == part]
-                        for ex in part_exercises:
-                            with st.container(border=True):
-                                if ex["filename"] and ex["filename"] in IMAGES_DATA:
-                                    st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
-                                else:
-                                    st.info("⏳ 圖片準備中")
-                                st.markdown(f"**{ex['nameCN']}**")
-                                st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
-                                if ex['nameCN'] in warnings:
-                                    st.warning("⚠️ 請減輕重量")
-                                
-                                # 已選的顯示「❌ 取消」,未選的顯示「✅ 加入訓練」
-                                is_selected = any(s.get("id") == ex["id"] for s in selected_exercises_list)
-                                if is_selected:
-                                    if st.button("❌ 取消選擇", key=f"toggle_{ex['id']}", 
-                                                 use_container_width=True, type="secondary"):
-                                        selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
-                                        st.session_state.selected_exercises_list = selected_exercises_list
-                                        st.rerun()
-                                else:
+            # ===== 已選動作清單(摺疊在最上方,顯眼但不佔空間)=====
+            if selected_exercises_list:
+                with st.expander(
+                    f"📋 已選動作 ({len(selected_exercises_list)}個 · 共{sum(e['sets'] for e in selected_exercises_list)}組)",
+                    expanded=False
+                ):
+                    for idx, ex in enumerate(selected_exercises_list):
+                        col_ex, col_cancel = st.columns([8, 2])
+                        with col_ex:
+                            st.write(f"**{idx + 1}.** {ex['nameCN']}")
+                            st.caption(f"{ex['sets']}組 × {ex['reps']}次")
+                        with col_cancel:
+                            if st.button("❌", key=f"remove_{ex['id']}", use_container_width=True):
+                                st.session_state.selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
+                                st.rerun()
+            
+            # ===== 可用動作(已選的會消失)=====
+            selected_ids = {s["id"] for s in selected_exercises_list}
+            available_exercises = [e for e in all_exercises if e["id"] not in selected_ids]
+            
+            st.markdown(f"#### 🏆 可用動作 ({len(available_exercises)}個)")
+            
+            if not available_exercises:
+                st.info("✅ 此部位的動作都已選完!")
+            else:
+                if len(selected_parts) > 1:
+                    tabs = st.tabs(selected_parts)
+                    for tab, part in zip(tabs, selected_parts):
+                        with tab:
+                            part_exercises = [e for e in available_exercises if e['bodyPart'] == part]
+                            if not part_exercises:
+                                st.info(f"✅ {part} 的動作都已選完")
+                            for ex in part_exercises:
+                                with st.container(border=True):
+                                    if ex["filename"] and ex["filename"] in IMAGES_DATA:
+                                        st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
+                                    else:
+                                        st.info("⏳ 圖片準備中")
+                                    st.markdown(f"**{ex['nameCN']}**")
+                                    st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
+                                    if ex['nameCN'] in warnings:
+                                        st.warning("⚠️ 請減輕重量")
+                                    
                                     if st.button("✅ 加入訓練", key=f"toggle_{ex['id']}", 
                                                  use_container_width=True, type="primary"):
                                         selected_exercises_list.append(ex)
                                         st.session_state.selected_exercises_list = selected_exercises_list
                                         st.rerun()
-            else:
-                for ex in all_exercises:
-                    with st.container(border=True):
-                        if ex["filename"] and ex["filename"] in IMAGES_DATA:
-                            st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
-                        else:
-                            st.info("⏳ 圖片準備中")
-                        st.markdown(f"**{ex['nameCN']}**")
-                        st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
-                        if ex['nameCN'] in warnings:
-                            st.warning("⚠️ 請減輕重量")
-                        
-                        # 已選的顯示「❌ 取消」,未選的顯示「✅ 加入訓練」
-                        is_selected = any(s.get("id") == ex["id"] for s in selected_exercises_list)
-                        if is_selected:
-                            if st.button("❌ 取消選擇", key=f"toggle_{ex['id']}", 
-                                         use_container_width=True, type="secondary"):
-                                selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
-                                st.session_state.selected_exercises_list = selected_exercises_list
-                                st.rerun()
-                        else:
+                else:
+                    for ex in available_exercises:
+                        with st.container(border=True):
+                            if ex["filename"] and ex["filename"] in IMAGES_DATA:
+                                st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
+                            else:
+                                st.info("⏳ 圖片準備中")
+                            st.markdown(f"**{ex['nameCN']}**")
+                            st.caption(f"{ex['difficulty']} · {ex['sets']}組 × {ex['reps']}次 · {ex['equipment']}")
+                            if ex['nameCN'] in warnings:
+                                st.warning("⚠️ 請減輕重量")
+                            
                             if st.button("✅ 加入訓練", key=f"toggle_{ex['id']}", 
                                          use_container_width=True, type="primary"):
                                 selected_exercises_list.append(ex)
@@ -566,20 +574,9 @@ else:
             
             st.session_state.selected_exercises_list = selected_exercises_list
             
+            # ===== 開始訓練按鈕 =====
             if selected_exercises_list:
                 st.divider()
-                st.markdown(f"#### 📋 已選動作 ({len(selected_exercises_list)}個)")
-                
-                for idx, ex in enumerate(selected_exercises_list):
-                    col_ex, col_cancel = st.columns([8, 2])
-                    with col_ex:
-                        st.write(f"**{idx + 1}.** {ex['nameCN']}")
-                        st.caption(f"{ex['sets']}組 × {ex['reps']}次")
-                    with col_cancel:
-                        if st.button("❌", key=f"remove_{ex['id']}", use_container_width=True):
-                            st.session_state.selected_exercises_list = [s for s in selected_exercises_list if s.get("id") != ex["id"]]
-                            st.rerun()
-                
                 st.success(f"✅ 共 {len(selected_exercises_list)} 個動作 · 總組數 {sum(e['sets'] for e in selected_exercises_list)}")
                 
                 if st.button("🎬 開始訓練", use_container_width=True, type="primary", key="start_workout_btn"):
@@ -587,7 +584,7 @@ else:
                         "exercises": selected_exercises_list,
                         "start": datetime.now(),
                         "duration": duration,
-                        "rest_setting": rest_setting  # 儲存使用者選的休息時間
+                        "rest_setting": rest_setting
                     }
                     st.session_state.current_ex_idx = 0
                     st.session_state.current_set = 1
@@ -710,7 +707,7 @@ else:
         if current_ex_idx < len(exs):
             ex = exs[current_ex_idx]
             
-            # ===== 頂部緊湊資訊條(進度 + 動作) =====
+            # ===== 頂部緊湊資訊條(永遠在頂,不會被遮)=====
             st.markdown(f"""
             <div class="info-bar">
                 <div>
@@ -727,201 +724,211 @@ else:
             # 進度條
             st.progress(progress, text=f"總進度: {completed_sets}/{total_sets} 組")
             
-            # ===== 圖片(可折疊,進階使用者可關閉節省空間) =====
-            with st.expander("🖼️ 動作示範", expanded=True):
+            # ===== 🎯 目標數顯示(最重要,放在最顯眼位置)=====
+            target_weight_str = ""
+            if ex['require_weight']:
+                last_w = st.session_state.exercise_weights.get(f"ex_{ex['id']}", 0)
+                if last_w > 0:
+                    target_weight_str = f" · 上次重量 {last_w}kg"
+            
+            st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%);
+                        color: white; padding: 16px; border-radius: 12px; margin: 8px 0;
+                        text-align: center; box-shadow: 0 4px 12px rgba(255,107,107,0.3);'>
+                <div style='font-size: 0.9rem; opacity: 0.95;'>🎯 本組目標</div>
+                <div style='font-size: 1.8rem; font-weight: 800; margin: 4px 0;'>
+                    {ex['reps']} 次{target_weight_str}
+                </div>
+                <div style='font-size: 0.85rem; opacity: 0.9;'>節奏:{ex['tempo']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # ===== Tab 分頁(動作 / 紀錄)=====
+            tab_action, tab_record = st.tabs(["📋 動作說明", "📊 紀錄這組"])
+            
+            # ─────── Tab 1:動作說明 ───────
+            with tab_action:
+                # 動作圖片
                 if ex["filename"] and ex["filename"] in IMAGES_DATA:
                     st.image(IMAGES_DATA[ex["filename"]], use_container_width=True)
                 else:
                     st.info("⏳ 圖片準備中")
-                st.caption(f"目標:{ex['target_muscle']} · 節奏:{ex['tempo']}")
-            
-            # ===== 下一組 / 下一動作預告 =====
-            if current_set < ex["sets"]:
-                next_text = f"⏭️ 下一組:第 {current_set + 1} 組 / 共 {ex['sets']} 組"
-            elif current_ex_idx + 1 < len(exs):
-                next_ex = exs[current_ex_idx + 1]
-                next_text = f"⏭️ 下個動作:{next_ex['nameCN']} ({next_ex['sets']}組 × {next_ex['reps']}次)"
-            else:
-                next_text = "🎉 這是最後一組!"
-            st.info(next_text)
-            
-            # ===== 動作技巧(折疊) =====
-            with st.expander("💡 執行技巧"):
+                
+                # 執行技巧
+                st.markdown("**💡 執行技巧:**")
                 for tip in ex["tips"]:
                     st.write(f"✅ {tip}")
-                st.caption(f"難度:{ex['difficulty']} · 器材:{ex['equipment']}")
-            
-            st.divider()
-            
-            # ===== 訓練數據輸入 =====
-            st.markdown("#### 📊 這一組的數據")
-            
-            records = get_records(user_id) or []
-            workout_log = st.session_state.get("workout_log", {})
-            last_set = get_last_set_data(workout_log, ex['nameCN'], current_set)
-            
-            # ----- 上一組數據顯示 -----
-            if last_set:
-                last_weight_str = f" · 重量 {last_set.get('weight', 0)}kg" if last_set.get('weight') else ""
-                st.caption(f"📋 上一組:{last_set.get('reps', 0)} 次{last_weight_str} · 疲勞 {last_set.get('fatigue', '-')}/10")
-            
-            # ----- 次數輸入(含快速 +/-) -----
-            past_best_reps = get_past_best_reps(records, ex['nameCN'])
-            reps_label = "💪 完成次數"
-            if past_best_reps:
-                reps_label += f" (歷史最高 {past_best_reps})"
-            
-            # 重量+次數記憶 key
-            ex_key = f"ex_{ex['id']}"
-            
-            # number_input 用的 key(統一用這個)
-            reps_input_key = f"reps_input_{current_ex_idx}_{current_set}"
-            
-            # 初始化 number_input 的值(只在第一次設定)
-            if reps_input_key not in st.session_state:
-                default_reps = st.session_state.exercise_reps.get(ex_key, ex['reps'])
-                st.session_state[reps_input_key] = default_reps
-            
-            # 次數快速 +/- 按鈕(放在 number_input 上方,直接改 session_state)
-            rep_cols = st.columns(4)
-            with rep_cols[0]:
-                if st.button("－5", key=f"r_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 5)
-                    st.rerun()
-            with rep_cols[1]:
-                if st.button("－1", key=f"r_m1_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 1)
-                    st.rerun()
-            with rep_cols[2]:
-                if st.button("＋1", key=f"r_p1_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_input_key] = st.session_state[reps_input_key] + 1
-                    st.rerun()
-            with rep_cols[3]:
-                if st.button("＋5", key=f"r_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                    st.session_state[reps_input_key] = st.session_state[reps_input_key] + 5
-                    st.rerun()
-            
-            actual_reps = st.number_input(
-                reps_label,
-                min_value=0,
-                max_value=ex['reps'] + 50,
-                key=reps_input_key
-            )
-            
-            if past_best_reps and actual_reps > past_best_reps:
-                st.toast("🔥 突破紀錄了!", icon="🎉")
-            
-            # ----- 重量輸入(含快速 +/-) -----
-            weight = 0
-            if ex['require_weight']:
-                past_best_weight = get_past_best_weight(records, ex['nameCN'])
-                weight_label = "🏋️ 重量 (kg)"
-                if past_best_weight:
-                    weight_label += f" (歷史最高 {past_best_weight})"
                 
-                weight_input_key = f"weight_input_{current_ex_idx}_{current_set}"
+                st.caption(f"目標肌群:{ex['target_muscle']} · 難度:{ex['difficulty']} · 器材:{ex['equipment']}")
                 
-                # 初始化重量(只在第一次)
-                if weight_input_key not in st.session_state:
-                    default_weight = st.session_state.exercise_weights.get(ex_key, 0.0)
-                    st.session_state[weight_input_key] = default_weight
+                st.divider()
                 
-                # 重量快速 +/- 按鈕(放上方)
-                w_cols = st.columns(6)
-                with w_cols[0]:
-                    if st.button("−10", key=f"w_m10_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 10)
-                        st.rerun()
-                with w_cols[1]:
-                    if st.button("−5", key=f"w_m5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 5)
-                        st.rerun()
-                with w_cols[2]:
-                    if st.button("−2.5", key=f"w_m25_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 2.5)
-                        st.rerun()
-                with w_cols[3]:
-                    if st.button("+2.5", key=f"w_p25_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 2.5
-                        st.rerun()
-                with w_cols[4]:
-                    if st.button("+5", key=f"w_p5_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 5
-                        st.rerun()
-                with w_cols[5]:
-                    if st.button("+10", key=f"w_p10_{current_ex_idx}_{current_set}", use_container_width=True):
-                        st.session_state[weight_input_key] = st.session_state[weight_input_key] + 10
-                        st.rerun()
-                
-                weight = st.number_input(
-                    weight_label,
-                    min_value=0.0,
-                    step=0.5,
-                    key=weight_input_key
-                )
-                st.session_state.exercise_weights[ex_key] = weight
-                
-                if past_best_weight and weight > past_best_weight:
-                    st.toast("🔥 突破紀錄了!", icon="🎉")
-            
-            # ----- 疲勞度 -----
-            fatigue = st.slider(
-                "😓 疲勞度 (1=輕鬆 / 10=力竭)",
-                1, 10, 5,
-                key=f"fatigue_{current_ex_idx}_{current_set}"
-            )
-            
-            st.divider()
-            
-            # ===== 主操作按鈕(完成這組) =====
-            if st.button("✅ 完成這組", use_container_width=True, type="primary", key="btn_done"):
-                volume = weight * actual_reps if ex['require_weight'] else actual_reps
-                
-                log_key = f"{current_ex_idx}_{current_set}"
-                if "workout_log" not in st.session_state:
-                    st.session_state.workout_log = {}
-                
-                st.session_state.workout_log[log_key] = {
-                    "exercise": ex['nameCN'],
-                    "set": current_set,
-                    "reps": actual_reps,
-                    "weight": weight if ex['require_weight'] else None,
-                    "fatigue": fatigue,
-                    "volume": volume
-                }
-                
-                # 記憶下次帶入值
-                st.session_state.exercise_reps[ex_key] = actual_reps
-                
-                # 標記要捲動到頂部
-                st.session_state.scroll_to_top = True
-                
-                # 振動回饋
-                st.markdown("""
-                <script>
-                    if (navigator.vibrate) { navigator.vibrate([100, 50, 100]); }
-                </script>
-                """, unsafe_allow_html=True)
-                
+                # 下一組 / 下一動作預告
                 if current_set < ex["sets"]:
-                    # 根據使用者設定決定休息時間
-                    rest_setting = st.session_state.workout.get("rest_setting", "auto")
-                    if rest_setting == "auto":
-                        rest_time = REST_TIMES.get(ex['difficulty'], 60)
-                    else:
-                        rest_time = int(rest_setting)
-                    
-                    st.session_state.rest_timer_active = True
-                    st.session_state.rest_end_time = datetime.now() + timedelta(seconds=rest_time)
-                    st.session_state.rest_total_seconds = rest_time
-                    st.session_state.rest_skipped = False
-                    st.session_state.current_set += 1
+                    next_text = f"⏭️ **下一組**:第 {current_set + 1} 組 / 共 {ex['sets']} 組"
+                elif current_ex_idx + 1 < len(exs):
+                    next_ex = exs[current_ex_idx + 1]
+                    next_text = f"⏭️ **下個動作**:{next_ex['nameCN']} ({next_ex['sets']}組 × {next_ex['reps']}次)"
                 else:
-                    st.session_state.current_ex_idx += 1
-                    st.session_state.current_set = 1
-                st.rerun()
+                    next_text = "🎉 **這是最後一組!**"
+                st.info(next_text)
             
-            # ===== 次要操作(折疊) =====
+            # ─────── Tab 2:紀錄這組 ───────
+            with tab_record:
+                records = get_records(user_id) or []
+                workout_log = st.session_state.get("workout_log", {})
+                last_set = get_last_set_data(workout_log, ex['nameCN'], current_set)
+                
+                # 上一組數據顯示
+                if last_set:
+                    last_weight_str = f" · 重量 {last_set.get('weight', 0)}kg" if last_set.get('weight') else ""
+                    st.caption(f"📋 上一組:{last_set.get('reps', 0)} 次{last_weight_str} · 疲勞 {last_set.get('fatigue', '-')}/10")
+                
+                # ----- 次數輸入(含快速 +/-) -----
+                past_best_reps = get_past_best_reps(records, ex['nameCN'])
+                reps_label = "💪 完成次數"
+                if past_best_reps:
+                    reps_label += f" (歷史最高 {past_best_reps})"
+                
+                ex_key = f"ex_{ex['id']}"
+                reps_input_key = f"reps_input_{current_ex_idx}_{current_set}"
+                
+                if reps_input_key not in st.session_state:
+                    default_reps = st.session_state.exercise_reps.get(ex_key, ex['reps'])
+                    st.session_state[reps_input_key] = default_reps
+                
+                # 次數快速 +/- 按鈕
+                rep_cols = st.columns(4)
+                with rep_cols[0]:
+                    if st.button("－5", key=f"r_m5_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 5)
+                        st.rerun()
+                with rep_cols[1]:
+                    if st.button("－1", key=f"r_m1_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[reps_input_key] = max(0, st.session_state[reps_input_key] - 1)
+                        st.rerun()
+                with rep_cols[2]:
+                    if st.button("＋1", key=f"r_p1_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[reps_input_key] = st.session_state[reps_input_key] + 1
+                        st.rerun()
+                with rep_cols[3]:
+                    if st.button("＋5", key=f"r_p5_{current_ex_idx}_{current_set}", use_container_width=True):
+                        st.session_state[reps_input_key] = st.session_state[reps_input_key] + 5
+                        st.rerun()
+                
+                actual_reps = st.number_input(
+                    reps_label,
+                    min_value=0,
+                    max_value=ex['reps'] + 50,
+                    key=reps_input_key
+                )
+                
+                if past_best_reps and actual_reps > past_best_reps:
+                    st.toast("🔥 突破紀錄了!", icon="🎉")
+                
+                # ----- 重量輸入(含快速 +/-) -----
+                weight = 0
+                if ex['require_weight']:
+                    past_best_weight = get_past_best_weight(records, ex['nameCN'])
+                    weight_label = "🏋️ 重量 (kg)"
+                    if past_best_weight:
+                        weight_label += f" (歷史最高 {past_best_weight})"
+                    
+                    weight_input_key = f"weight_input_{current_ex_idx}_{current_set}"
+                    
+                    if weight_input_key not in st.session_state:
+                        default_weight = st.session_state.exercise_weights.get(ex_key, 0.0)
+                        st.session_state[weight_input_key] = default_weight
+                    
+                    # 重量快速 +/- 按鈕
+                    w_cols = st.columns(6)
+                    with w_cols[0]:
+                        if st.button("−10", key=f"w_m10_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 10)
+                            st.rerun()
+                    with w_cols[1]:
+                        if st.button("−5", key=f"w_m5_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 5)
+                            st.rerun()
+                    with w_cols[2]:
+                        if st.button("−2.5", key=f"w_m25_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = max(0.0, st.session_state[weight_input_key] - 2.5)
+                            st.rerun()
+                    with w_cols[3]:
+                        if st.button("+2.5", key=f"w_p25_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 2.5
+                            st.rerun()
+                    with w_cols[4]:
+                        if st.button("+5", key=f"w_p5_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 5
+                            st.rerun()
+                    with w_cols[5]:
+                        if st.button("+10", key=f"w_p10_{current_ex_idx}_{current_set}", use_container_width=True):
+                            st.session_state[weight_input_key] = st.session_state[weight_input_key] + 10
+                            st.rerun()
+                    
+                    weight = st.number_input(
+                        weight_label,
+                        min_value=0.0,
+                        step=0.5,
+                        key=weight_input_key
+                    )
+                    st.session_state.exercise_weights[ex_key] = weight
+                    
+                    if past_best_weight and weight > past_best_weight:
+                        st.toast("🔥 突破紀錄了!", icon="🎉")
+                
+                # ----- 疲勞度 -----
+                fatigue = st.slider(
+                    "😓 疲勞度 (1=輕鬆 / 10=力竭)",
+                    1, 10, 5,
+                    key=f"fatigue_{current_ex_idx}_{current_set}"
+                )
+                
+                # ===== 主操作按鈕(完成這組) =====
+                if st.button("✅ 完成這組", use_container_width=True, type="primary", key="btn_done"):
+                    volume = weight * actual_reps if ex['require_weight'] else actual_reps
+                    
+                    log_key = f"{current_ex_idx}_{current_set}"
+                    if "workout_log" not in st.session_state:
+                        st.session_state.workout_log = {}
+                    
+                    st.session_state.workout_log[log_key] = {
+                        "exercise": ex['nameCN'],
+                        "set": current_set,
+                        "reps": actual_reps,
+                        "weight": weight if ex['require_weight'] else None,
+                        "fatigue": fatigue,
+                        "volume": volume
+                    }
+                    
+                    st.session_state.exercise_reps[ex_key] = actual_reps
+                    
+                    # 振動回饋
+                    st.markdown("""
+                    <script>
+                        if (navigator.vibrate) { navigator.vibrate([100, 50, 100]); }
+                    </script>
+                    """, unsafe_allow_html=True)
+                    
+                    if current_set < ex["sets"]:
+                        rest_setting = st.session_state.workout.get("rest_setting", "auto")
+                        if rest_setting == "auto":
+                            rest_time = REST_TIMES.get(ex['difficulty'], 60)
+                        else:
+                            rest_time = int(rest_setting)
+                        
+                        st.session_state.rest_timer_active = True
+                        st.session_state.rest_end_time = datetime.now() + timedelta(seconds=rest_time)
+                        st.session_state.rest_total_seconds = rest_time
+                        st.session_state.rest_skipped = False
+                        st.session_state.current_set += 1
+                    else:
+                        st.session_state.current_ex_idx += 1
+                        st.session_state.current_set = 1
+                    st.rerun()
+            
+            # ===== 次要操作(折疊,放在 Tab 外面)=====
             with st.expander("⚙️ 其他操作"):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -1069,11 +1076,20 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v25 - 捲動修復版
+            ✅ SmartFit v26 - Tab 分頁體驗大改版
             
-            🆕 修復:
-            ✅ 完成組數後自動捲到頂部(用 components.html 強化)
-            ✅ 多種 JS 方法嘗試,提高相容性
+            🆕 重大改造:
+            ✅ 訓練畫面用 Tab 分頁(動作 / 紀錄)
+            ✅ 目標數放最顯眼位置(本組目標)
+            ✅ 已選動作摺疊在最上方
+            ✅ 已選的動作從可用清單消失
+            ✅ 大幅減少滑動需求
+            
+            🎯 既有功能:
+            ✅ 自訂休息時間
+            ✅ URL 自動登入
+            ✅ Google Sheets 雲端儲存
+            ✅ 休息倒數可跳過/+30/-30秒
             
             🎯 v23 修復:
             ✅ +/- 按鈕點擊後數字立即更新
