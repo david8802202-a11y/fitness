@@ -367,12 +367,46 @@ else:
     # ===== 自動捲動到頂部(如果有標記) =====
     if st.session_state.get("scroll_to_top", False):
         st.session_state.scroll_to_top = False  # 用過就清除
-        st.markdown("""
+        # 使用 components.html 確保 JS 能執行(突破 Streamlit iframe 限制)
+        from streamlit.components.v1 import html as components_html
+        components_html("""
         <script>
-            window.parent.document.querySelector('.main').scrollTo({top: 0, behavior: 'smooth'});
-            window.scrollTo({top: 0, behavior: 'smooth'});
+            // 多種方式嘗試捲動,確保在不同環境都能運作
+            function scrollToTop() {
+                // 方法 1: 透過 parent window
+                try {
+                    window.parent.document.querySelector('section.main').scrollTo({top: 0, behavior: 'smooth'});
+                } catch(e) {}
+                
+                try {
+                    window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTo({top: 0, behavior: 'smooth'});
+                } catch(e) {}
+                
+                try {
+                    window.parent.document.querySelector('.main .block-container').scrollIntoView({behavior: 'smooth', block: 'start'});
+                } catch(e) {}
+                
+                try {
+                    window.parent.scrollTo({top: 0, behavior: 'smooth'});
+                } catch(e) {}
+                
+                // 方法 2: 直接捲動 window
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                
+                // 方法 3: 捲動 document.documentElement
+                try {
+                    window.parent.document.documentElement.scrollTop = 0;
+                    window.parent.document.body.scrollTop = 0;
+                } catch(e) {}
+            }
+            
+            // 立即執行 + 延遲執行(確保元素已渲染)
+            scrollToTop();
+            setTimeout(scrollToTop, 100);
+            setTimeout(scrollToTop, 300);
+            setTimeout(scrollToTop, 600);
         </script>
-        """, unsafe_allow_html=True)
+        """, height=0)
     
     # 初始化狀態
     for key, default in [
@@ -1035,10 +1069,11 @@ else:
         st.divider()
         with st.expander("ℹ️ 版本資訊"):
             st.success("""
-            ✅ SmartFit v24 - 自動捲動版
+            ✅ SmartFit v25 - 捲動修復版
             
-            🆕 新增:
-            ✅ 完成組數後自動捲到頂部(看下個動作)
+            🆕 修復:
+            ✅ 完成組數後自動捲到頂部(用 components.html 強化)
+            ✅ 多種 JS 方法嘗試,提高相容性
             
             🎯 v23 修復:
             ✅ +/- 按鈕點擊後數字立即更新
